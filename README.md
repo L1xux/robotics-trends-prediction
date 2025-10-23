@@ -6,7 +6,7 @@
 
 - **Objective**: 사용자가 입력한 주제에 대해 학술 논문, 뉴스, 전문가 보고서를 수집하고 분석하여 5년 후 기술 트렌드를 예측하는 종합 보고서 자동 생성
 - **Methods**: Multi-Agent System, ReAct Pattern, Human-in-the-Loop, RAG (Retrieval Augmented Generation)
-- **Tools**: LangChain, ArXiv API, RAG (FAISS/ChromaDB), Web Crawler
+- **Tools**: LangChain, ArXiv API, RAG (ChromaDB), Web Crawler
 
 ## Key Features
 
@@ -27,13 +27,12 @@
 - Writer Agent가 최종 보고서 생성 후 **사용자에게 리뷰 요청**
 - LLM 기반 피드백 감정 분석 (승인/수정 요청 자동 판단)
 - 수정 필요 
-  - 사소한 내용 수정
-  - 추가 데이터 수집부터 다시 시작.
+  - 사소한 내용 수정 -> Revise Agent
+  - 추가 데이터 수집부터 다시 시작. -> Data Collect Agent
 
 ### 4. **Advanced RAG System**
 - **Hybrid Retrieval**: BM25 (키워드 기반) + Cosine Similarity (의미 기반)
 - **MMR (Maximal Marginal Relevance)**: 다양성과 관련성의 균형
-- FAISS 및 ChromaDB를 활용한 효율적인 벡터 검색
 
 ### 5. **Comprehensive Report Generation**
 - 6개 섹션으로 구성된 전문가 수준 보고서
@@ -69,7 +68,7 @@
    - 데이터 충분성 자동 판단 (GPT-4o)
    - 최대 3회 재시도로 고품질 데이터 확보
 
-3. **Writer Agent** (도구는 코드 레벨에서 사용)
+3. **Writer Agent** (ReAct)
    - 최종 보고서 조립 및 사용자 리뷰
    - Human-in-the-Loop: 피드백 기반 자동 수정 또는 재수집
 
@@ -374,9 +373,10 @@ python scripts/run_pipeline.py --topic "Collaborative Robots in Manufacturing"
 
 ## Contributors
 
-- **이의진** - Project Owner & Lead Developer
+- **이의진** - Project Owner % Worker
 
 ---
 
 **Version**: 1.0.0
 **Last Updated**: 2025-01-23
+
