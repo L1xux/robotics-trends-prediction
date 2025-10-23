@@ -91,22 +91,49 @@
 
 # State
 
+# State Management
+
 ## PipelineState Fields
 
 | Key                    | Description                                  |
 |------------------------|----------------------------------------------|
 | `user_input`           | 사용자가 입력한 분석 주제                      |
 | `planning_output`      | Planning Agent가 생성한 계획 (PlanningOutput)  |
-| `keywords`             | 확장된 키워드 리스트 (25-35개)                 |
-| `arxiv_data`           | ArXiv 논문 데이터 및 Citation                 |
-| `rag_results`          | RAG 검색 결과 (전문가 보고서)                  |
-| `news_data`            | 크롤링한 뉴스 기사 데이터                      |
-| `trends`               | 분류된 트렌드 (2-Tier 구조)                   |
-| `sections`             | 10개 서브섹션 콘텐츠                          |
-| `final_report`         | 최종 마크다운 보고서                          |
-| `citations`            | 모든 인용 정보 (CitationCollection)           |
-| `status`               | 워크플로우 진행 상태 (WorkflowStatus Enum)    |
+| `folder_name`          | 실행 폴더명: {topic}_{YYYYMMDD}_{HHMMSS}     |
+| `keywords`             | Planning Agent가 생성한 키워드 리스트          |
+| `expanded_keywords`     | 확장된 키워드 (arXiv + RAG 기반)              |
+| `arxiv_data`           | ArXiv 논문 데이터                             |
+| `trends_data`          | Google Trends 데이터                          |
+| `news_data`            | Tech News 기사 데이터                         |
+| `rag_results`          | RAG Tool 검색 결과 (FTSG, WEF 보고서)         |
+| `trends`               | 2-Tier 분류 결과 (List[TrendTier])            |
+| `sections`             | 10개 서브섹션 내용 (section_2_1, section_2_2, ...) |
+| `citations`            | 본문에서 사용된 인용 (List[CitationEntry])     |
+| `summary`              | Executive Summary                             |
+| `section_1`            | Section 1: Introduction                      |
+| `section_6`            | Section 6: Conclusion                        |
+| `references`           | References (formatted citations)              |
+| `appendix`             | Appendix                                      |
+| `final_report`         | 최종 보고서 전문 (마크다운)                   |
+| `report_generated_at`  | 보고서 생성 시간                              |
+| `human_review_1`       | Human Review 1 결과 (True: Accept, False: Reject) |
+| `human_review_1_feedback` | Human Review 1 피드백 (Reject 시)            |
+| `human_review_2`       | Human Review 2 완료 여부                      |
 | `review_feedback`      | 사용자 피드백 (Human Review)                  |
+| `feedback_classification` | 피드백 심각도 분석                          |
+| `revision_type`        | 수정 타입 (RevisionType)                     |
+| `revision_count`       | 수행된 수정 횟수                             |
+| `collection_status`    | DataCollectionStatus 객체 (품질 점수, 수집 개수) |
+| `quality_check_result` | QualityCheckResult 객체 (LLM 품질 평가)       |
+| `retry_count`          | 현재 재시도 횟수 (default: 0)                |
+| `max_retries`          | 최대 재시도 횟수 (default: 3)                |
+| `pdf_path`             | 생성된 PDF 파일 경로                          |
+| `docx_path`            | 중간 DOCX 파일 경로                           |
+| `translation_failed`   | 한국어 번역 실패 여부                         |
+| `status`               | 워크플로우 진행 상태 (WorkflowStatus Enum)    |
+| `error`                | 에러 발생 시 에러 메시지                      |
+| `created_at`           | 워크플로우 시작 시간 (ISO format)             |
+| `updated_at`           | 마지막 업데이트 시간 (ISO format)             |
 
 ## WorkflowStatus Enum
 
@@ -116,16 +143,28 @@
 | `PLANNING_COMPLETE`        | 계획 수립 완료                 |
 | `PLANNING_ACCEPTED`        | 계획 승인됨                    |
 | `PLANNING_REJECTED`        | 계획 거부됨                    |
+| `PLANNING_REFINED`         | 계획 개선됨                    |
+| `PLANNING_FAILED`          | 계획 수립 실패                 |
 | `DATA_COLLECTION_COMPLETE` | 데이터 수집 완료               |
+| `DATA_COLLECTION_FAILED`   | 데이터 수집 실패               |
 | `ANALYSIS_COMPLETE`        | 콘텐츠 분석 완료               |
-| `SYNTHESIS_COMPLETE`        | 보고서 합성 완료               |
+| `ANALYSIS_FAILED`          | 콘텐츠 분석 실패               |
+| `SYNTHESIS_COMPLETE`       | 보고서 합성 완료               |
+| `SYNTHESIS_FAILED`         | 보고서 합성 실패               |
 | `WRITER_COMPLETE`          | 보고서 작성 완료               |
+| `WRITER_FAILED`            | 보고서 작성 실패               |
 | `REPORT_ACCEPTED`          | 보고서 승인됨                  |
-| `NEEDS_REVISION`           | 수정 필요                      |
+| `NEEDS_MINOR_REVISION`     | 소규모 수정 필요               |
+| `NEEDS_MAJOR_REVISION`     | 대규모 수정 필요               |
+| `REVIEW_FAILED`            | 검토 실패                     |
+| `REVISION_COMPLETE`        | 수정 완료                     |
+| `REVISION_FAILED`          | 수정 실패                     |
+| `NEEDS_REVISION`           | 수정 필요                     |
 | `NEEDS_RECOLLECTION`       | 데이터 재수집 필요              |
-| `REVISION_COMPLETE`        | 수정 완료                      |
 | `COMPLETED`                | 워크플로우 완료                |
+| `WORKFLOW_COMPLETE`        | 워크플로우 완료                |
 | `WORKFLOW_FAILED`          | 워크플로우 실패                |
+
 
 ## 아키텍처
 ```
@@ -400,5 +439,6 @@ python scripts/run_pipeline.py --topic "Collaborative Robots in Manufacturing"
 
 **Version**: 1.0.0
 **Last Updated**: 2025-01-23
+
 
 
