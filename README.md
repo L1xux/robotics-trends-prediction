@@ -89,7 +89,9 @@
 
 ## State Management
 
-LangGraph의 공유 상태로 전체 워크플로우 데이터 관리:
+# State
+
+## PipelineState Fields
 
 | Key                    | Description                                  |
 |------------------------|----------------------------------------------|
@@ -105,6 +107,25 @@ LangGraph의 공유 상태로 전체 워크플로우 데이터 관리:
 | `citations`            | 모든 인용 정보 (CitationCollection)           |
 | `status`               | 워크플로우 진행 상태 (WorkflowStatus Enum)    |
 | `review_feedback`      | 사용자 피드백 (Human Review)                  |
+
+## WorkflowStatus Enum
+
+| Status                     | Description                    |
+|----------------------------|--------------------------------|
+| `INITIALIZED`              | 워크플로우 초기화               |
+| `PLANNING_COMPLETE`        | 계획 수립 완료                 |
+| `PLANNING_ACCEPTED`        | 계획 승인됨                    |
+| `PLANNING_REJECTED`        | 계획 거부됨                    |
+| `DATA_COLLECTION_COMPLETE` | 데이터 수집 완료               |
+| `ANALYSIS_COMPLETE`        | 콘텐츠 분석 완료               |
+| `SYNTHESIS_COMPLETE`        | 보고서 합성 완료               |
+| `WRITER_COMPLETE`          | 보고서 작성 완료               |
+| `REPORT_ACCEPTED`          | 보고서 승인됨                  |
+| `NEEDS_REVISION`           | 수정 필요                      |
+| `NEEDS_RECOLLECTION`       | 데이터 재수집 필요              |
+| `REVISION_COMPLETE`        | 수정 완료                      |
+| `COMPLETED`                | 워크플로우 완료                |
+| `WORKFLOW_FAILED`          | 워크플로우 실패                |
 
 ## 아키텍처
 ```
@@ -379,4 +400,5 @@ python scripts/run_pipeline.py --topic "Collaborative Robots in Manufacturing"
 
 **Version**: 1.0.0
 **Last Updated**: 2025-01-23
+
 
