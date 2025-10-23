@@ -1,0 +1,426 @@
+# AI Robotics Report Generator - 프로젝트 구조 설명서
+
+## 📋 프로젝트 개요
+AI 기반 로보틱스 트렌드 분석 및 보고서 자동 생성 시스템입니다.
+LangGraph를 활용한 멀티 에이전트 워크플로우로 구성되어 있으며, arXiv 논문, Google Trends, 뉴스 데이터를 수집하여 종합적인 트렌드 보고서를 생성합니다.
+
+**핵심 특징:**
+- LCEL(LangChain Expression Language) 기반 에이전트 구현
+- 2-Tier 트렌드 분류 시스템 (HOT_TRENDS, RISING_STARS)
+- Human-in-the-loop 워크플로우 (Planning 단계 승인)
+- RAG 시스템을 통한 참고 문서 검색 강화
+- 병렬 데이터 수집 및 품질 검사
+
+## 📁 전체 폴더 구조
+
+```
+ai-robotics-report-generator/
+├── .env                           # 환경변수 설정 파일 (실제)
+├── .env.example                   # 환경변수 설정 예시 파일
+├── .gitignore                     # Git 무시 파일 목록
+├── README.md                      # 프로젝트 기본 설명
+├── requirements.txt               # Python 패키지 의존성 목록
+├── PROJECT_STRUCTURE.txt          # 이 파일 - 프로젝트 구조 설명서
+│
+├── config/                        # 프로젝트 레벨 설정 (src 외부)
+│   ├── __init__.py
+│   ├── app_config.yaml           # 애플리케이션 설정 (선택적)
+│   └── prompts/                  # 프롬프트 모음
+│       ├── __init__.py
+│       ├── planning_prompts.py   # Planning Agent 프롬프트 (실제 구현됨)
+│       ├── analysis_prompts.py   # Analysis Agent 프롬프트 (실제 구현됨)
+│       ├── synthesis_prompts.py  # Synthesis Agent 프롬프트
+│       ├── quality_checker_prompts.py # 품질 검사 프롬프트 (실제 구현됨)
+│       └── revision_prompts.py   # Revision Agent 프롬프트
+│
+├── data/                         # 데이터 저장소
+│   ├── raw/                      # 원본 데이터 (실행별 폴더)
+│   │   └── .gitkeep
+│   ├── processed/                # 전처리된 데이터
+│   │   └── .gitkeep
+│   ├── reports/                  # 생성된 보고서
+│   │   └── .gitkeep
+│   ├── chromadb/                 # 벡터 데이터베이스
+│   │   └── .gitkeep
+│   └── logs/                     # 로그 파일들
+│       ├── .gitkeep
+│       ├── pipeline_logs/        # 파이프라인 실행 로그
+│       └── error_states/         # 에러 발생 시 State 덤프
+│
+├── reference_docs/               # 참고 문서
+│   ├── .gitkeep
+│   ├── FTSG.pdf                  # FTSG 참고 문서
+│   └── WEF.pdf                   # WEF 참고 문서
+│
+├── scripts/                      # 실행 스크립트
+│   ├── run_pipeline.py          # 메인 실행 스크립트 (Container 초기화)
+│   ├── indexer_builder.py       # 인덱서 빌드 스크립트
+│   └── validate_setup.py        # 환경 설정 검증 스크립트
+│
+├── src/                         # 소스 코드
+│   ├── __init__.py
+│   │
+│   ├── core/                    # 핵심 인프라
+│   │   ├── __init__.py
+│   │   ├── container.py         # DI Container (간단한 구현)
+│   │   ├── settings.py          # Settings (Pydantic BaseSettings) - 실제 구현됨
+│   │   ├── factories/           # Factory 패턴
+│   │   │   ├── __init__.py
+│   │   │   ├── agent_factory.py # Agent 생성 Factory
+│   │   │   └── tool_factory.py  # Tool 생성 Factory
+│   │   └── models/              # Pydantic 데이터 모델 (실제 구현됨)
+│   │       ├── __init__.py      # 모델 통합 export - 실제 구현됨
+│   │       ├── planning_model.py # Planning Agent 출력 모델 - 실제 구현됨
+│   │       ├── data_collection_model.py # 데이터 수집 모델 - 실제 구현됨
+│   │       ├── quality_check_model.py # 품질 검사 모델 - 실제 구현됨
+│   │       ├── revision_model.py # Revision 모델 - 실제 구현됨
+│   │       ├── trend_model.py   # 트렌드 분석 모델 - 실제 구현됨
+│   │       └── citation_model.py # 인용 모델 - 실제 구현됨
+│   │
+│   ├── agents/                  # AI 에이전트들 (실제 구현됨)
+│   │   ├── __init__.py
+│   │   ├── base/                # Base Agent
+│   │   │   ├── __init__.py
+│   │   │   ├── base_agent.py    # BaseAgent (ABC) - 실제 구현됨
+│   │   │   └── agent_config.py  # AgentConfig (Dataclass)
+│   │   │
+│   │   ├── planning_agent.py    # PlanningAgent(BaseAgent) - 실제 구현됨
+│   │   ├── data_collection_agent.py # DataCollectionAgent(BaseAgent) - 실제 구현됨
+│   │   ├── content_analysis_agent.py # ContentAnalysisAgent(BaseAgent) - 실제 구현됨
+│   │   ├── report_synthesis_agent.py # ReportSynthesisAgent(BaseAgent)
+│   │   ├── writer_agent.py      # WriterAgent(BaseAgent)
+│   │   └── revision_agent.py    # RevisionAgent(BaseAgent)
+│   │
+│   ├── tools/                   # 도구들
+│   │   ├── __init__.py
+│   │   ├── base/                # Base Tool
+│   │   │   ├── __init__.py
+│   │   │   ├── base_tool.py     # BaseTool (ABC)
+│   │   │   └── tool_config.py   # ToolConfig (Dataclass)
+│   │   │
+│   │   ├── arxiv_tool.py        # ArxivTool(BaseTool)
+│   │   ├── google_trends_tool.py # GoogleTrendsTool(BaseTool)
+│   │   ├── news_crawler_tool.py # NewsCrawlerTool(BaseTool)
+│   │   └── rag_tool.py          # RAGTool(BaseTool)
+│   │
+│   ├── graph/                   # LangGraph 워크플로우
+│   │   ├── __init__.py
+│   │   ├── state.py             # State 정의 (TypedDict) - 실제 구현됨
+│   │   ├── nodes.py             # Node 함수들 (Container에서 Agent 주입)
+│   │   ├── edges.py             # 조건부 엣지
+│   │   └── workflow.py          # Graph Builder (Factory 패턴)
+│   │
+│   ├── document/                # 문서 생성
+│   │   ├── __init__.py
+│   │   ├── docx_generator.py    # DOCX 보고서 생성
+│   │   └── pdf_converter.py     # PDF 변환
+│   │
+│   ├── rag/                     # RAG 시스템
+│   │   ├── __init__.py
+│   │   ├── indexer.py           # RAG 인덱서
+│   │   └── retriever.py         # RAG 검색기
+│   │
+│   ├── utils/                   # 유틸리티 (실제 구현됨)
+│   │   ├── __init__.py
+│   │   ├── logger.py            # Rich 기반 구조화된 로깅 시스템 - 실제 구현됨
+│   │   ├── error_handler.py     # 에러 처리 및 State 덤프 - 실제 구현됨
+│   │   └── file_utils.py        # 파일 입출력 유틸리티 - 실제 구현됨
+│   │
+│   └── cli/                     # CLI 인터페이스
+│       ├── __init__.py
+│       └── human_review.py      # Human Review CLI
+│
+└── tests/                       # 테스트
+    ├── __init__.py
+    ├── unit/                    # 단위 테스트
+    │   ├── test_agents/         # Agent 테스트
+    │   ├── test_tools/          # Tool 테스트
+    │   └── test_factories/      # Factory 테스트
+    └── integration/             # 통합 테스트
+        └── test_workflow.py     # 워크플로우 테스트
+```
+
+## 📄 주요 파일 상세 설명
+
+### 🔧 설정 파일들
+
+#### `.env` / `.env.example`
+- **역할**: 환경변수 설정 파일
+- **내용**: OpenAI API 키, 모델 설정, 데이터베이스 경로 등
+- **상태**: `.env` 파일 존재, `.env.example`은 예시 파일
+
+#### `requirements.txt`
+- **역할**: Python 패키지 의존성 목록
+- **주요 패키지**: 
+  - LangGraph, LangChain (AI 프레임워크)
+  - ChromaDB (벡터 데이터베이스)
+  - arxiv, pytrends, newspaper3k (데이터 수집)
+  - pandas, numpy, scikit-learn (분석)
+  - python-docx, PyPDF2 (문서 처리)
+  - rich, click (CLI)
+
+### 🏗️ 핵심 인프라 (`src/core/`)
+
+#### `settings.py` ✅ **실제 구현됨**
+- **역할**: Pydantic BaseSettings를 사용한 전역 설정 관리
+- **기능**: 
+  - 환경변수 기반 설정 (OpenAI, ChromaDB, 경로 등)
+  - 싱글톤 패턴으로 구현
+  - 설정 검증 및 타입 안전성
+
+#### `container.py`
+- **역할**: DI Container (의존성 주입 컨테이너)
+- **기능**: 간단한 구현으로 서비스 등록/해결
+- **상태**: 플레이스홀더 파일
+
+#### `factories/`
+- **`agent_factory.py`**: Agent 생성 Factory
+- **`tool_factory.py`**: Tool 생성 Factory
+- **상태**: 플레이스홀더 파일들
+
+#### `models/` ✅ **실제 구현됨**
+- **`__init__.py`**: 모델 통합 export - 모든 모델을 한 곳에서 import 가능
+- **`planning_model.py`**: Planning Agent 출력 모델 (PlanningOutput, CollectionPlan 등)
+- **`quality_check_model.py`**: 품질 검사 모델 (QualityCheckResult, RetryAction)
+- **`trend_model.py`**: 트렌드 분석 모델 (TrendTier - 2-Tier 분류 시스템)
+- **`data_collection_model.py`**: 데이터 수집 모델 (DataCollectionStatus)
+- **`revision_model.py`**: Revision 모델 (RevisionDecision)
+- **`citation_model.py`**: 인용 모델 (CitationEntry)
+
+### 🤖 AI 에이전트들 (`src/agents/`)
+
+#### `base/` ✅ **실제 구현됨**
+- **`base_agent.py`**: 모든 Agent의 추상 기본 클래스
+  - BaseAgent(ABC) 구현
+  - execute() 메서드 추상화
+  - LLM, tools, config 관리
+- **`agent_config.py`**: Agent 설정 데이터클래스
+
+#### 개별 Agent들 ✅ **실제 구현됨**
+
+##### `planning_agent.py` ✅
+- **역할**: 분석 계획 수립
+- **기능**: 
+  - 사용자 주제 분석
+  - 키워드 확장 (5-15개)
+  - 폴더명 생성 (topic_YYYYMMDD_HHMMSS)
+  - 데이터 수집 계획 수립 (arXiv, Trends, News)
+- **출력**: PlanningOutput 모델
+
+##### `data_collection_agent.py` ✅
+- **역할**: 데이터 수집 실행
+- **워크플로우**: 
+  1. ArxivTool 실행 (초기 키워드)
+  2. RAGTool 실행 (미래 트렌드 키워드 추출)
+  3. 키워드 확장 (논문 + RAG 결과)
+  4. GoogleTrendsTool || NewsCrawlerTool (병렬 실행)
+  5. 데이터 저장 및 품질 점수 계산
+- **기능**: 내부 품질 체크 및 재시도 로직 포함 (최대 3회)
+
+##### `content_analysis_agent.py` ✅
+- **역할**: 수집된 데이터 분석 및 보고서 내용 생성
+- **LCEL 방식**: 4번의 독립적인 LLM 호출
+- **워크플로우**: 
+  1. 병렬: Section 2 + Section 3
+  2. 순차: Section 4 (Section 2, 3 기반)
+  3. 순차: Section 5 (Section 2, 3, 4 기반)
+- **기능**:
+  - 데이터 통합 분석 (arXiv, Trends, News, RAG)
+  - 트렌드 티어 분류 (HOT_TRENDS, RISING_STARS)
+  - 섹션별 내용 생성 (10개 서브섹션)
+  - 인용 관리 (CitationEntry)
+
+##### 기타 Agent들
+- **`report_synthesis_agent.py`**: 보고서 합성 (플레이스홀더)
+- **`writer_agent.py`**: 최종 보고서 작성 (플레이스홀더)
+- **`revision_agent.py`**: 보고서 수정 (플레이스홀더)
+
+### 🛠️ 도구들 (`src/tools/`)
+
+#### `base/`
+- **`base_tool.py`**: 모든 Tool의 기본 클래스 (LangChain BaseTool 상속)
+- **`tool_config.py`**: Tool 설정 데이터클래스
+- **상태**: 플레이스홀더 파일들
+
+#### 개별 Tool들
+- **`arxiv_tool.py`**: arXiv 논문 검색 및 수집
+- **`google_trends_tool.py`**: Google Trends 데이터 수집
+- **`news_crawler_tool.py`**: 뉴스 크롤링
+- **`rag_tool.py`**: RAG 검색 도구
+- **상태**: 플레이스홀더 파일들
+
+### 🔄 워크플로우 (`src/graph/`)
+
+#### `state.py` ✅ **실제 구현됨**
+- **역할**: LangGraph State 정의 (TypedDict)
+- **내용**: PipelineState 클래스로 전체 파이프라인의 데이터 흐름 정의
+- **주요 필드**: 
+  - run_id, topic, current_stage, started_at
+  - keywords, collection_plan, folder_name
+  - data_file_paths, quality_status
+  - sections, rag_call_count
+  - errors
+
+#### 기타 Graph 파일들
+- **`workflow.py`**: Graph Builder (Factory 패턴) - 플레이스홀더
+- **`nodes.py`**: Node 함수들 (Container에서 Agent 주입) - 플레이스홀더
+- **`edges.py`**: 조건부 엣지 정의 - 플레이스홀더
+
+### 📊 데이터 처리 (`src/rag/`, `src/document/`)
+
+#### RAG 시스템
+- **`indexer.py`**: RAG 인덱서 - 플레이스홀더
+- **`retriever.py`**: RAG 검색기 - 플레이스홀더
+
+#### 문서 생성
+- **`docx_generator.py`**: DOCX 보고서 생성 - 플레이스홀더
+- **`pdf_converter.py`**: PDF 변환 - 플레이스홀더
+
+### 🔧 유틸리티 (`src/utils/`) ✅ **실제 구현됨**
+
+#### `logger.py` ✅
+- **역할**: Rich 기반 구조화된 로깅 시스템
+- **기능**:
+  - 콘솔 출력 (색상, 포맷)
+  - 파일 저장 (실행별 로그 파일)
+  - 레벨별 필터링 (DEBUG, INFO, WARNING, ERROR)
+  - 구조화된 메시지 (컨텍스트 정보 포함)
+
+#### `error_handler.py` ✅
+- **역할**: 에러 처리 및 State 덤프
+- **기능**:
+  - State 덤프: 에러 발생 시 전체 State JSON 저장
+  - 재시도 데코레이터: 자동 재시도 로직
+  - 에러 컨텍스트: 에러 발생 위치 추적
+
+#### `file_utils.py` ✅
+- **역할**: 파일 입출력 유틸리티
+- **기능**:
+  - JSON 저장/로드 (타입 안전)
+  - 폴더 생성/관리
+  - 파일 존재 확인
+  - 경로 정규화
+
+### 🎯 실행 스크립트 (`scripts/`)
+
+#### `run_pipeline.py`
+- **역할**: 메인 실행 스크립트 (Container 초기화)
+- **상태**: 플레이스홀더
+
+#### `indexer_builder.py`
+- **역할**: 인덱서 빌드 스크립트
+- **상태**: 플레이스홀더
+
+#### `validate_setup.py`
+- **역할**: 환경 설정 검증 스크립트
+- **상태**: 플레이스홀더
+
+### 🎨 프롬프트 (`config/prompts/`) ✅ **실제 구현됨**
+
+#### `planning_prompts.py` ✅
+- **역할**: Planning Agent 프롬프트
+- **내용**: 데이터 수집 계획 수립을 위한 프롬프트
+
+#### `analysis_prompts.py` ✅
+- **역할**: Analysis Agent 프롬프트
+- **내용**: 2-Tier 트렌드 분류 및 섹션별 내용 생성 프롬프트
+- **특징**: 각 섹션별로 독립적인 프롬프트 제공 (LCEL 방식)
+
+#### `quality_checker_prompts.py` ✅
+- **역할**: 품질 검사 프롬프트
+- **내용**: 수집된 데이터 품질 평가 프롬프트
+
+#### 기타 프롬프트들
+- **`synthesis_prompts.py`**: Synthesis Agent 프롬프트 - 플레이스홀더
+- **`revision_prompts.py`**: Revision Agent 프롬프트 - 플레이스홀더
+
+### 📁 데이터 저장소 (`data/`)
+
+#### 구조
+- **`raw/`**: 원본 데이터 (실행별 폴더) - Format: `{topic}_{YYYYMMDD}_{HHMMSS}/`
+- **`processed/`**: 전처리된 데이터
+- **`reports/`**: 생성된 보고서
+- **`chromadb/`**: 벡터 데이터베이스
+- **`logs/`**:
+  - **`pipeline_logs/`**: 파이프라인 실행 로그
+  - **`error_states/`**: 에러 발생 시 State 덤프
+
+### 🧪 테스트 (`tests/`)
+
+#### 구조
+- **`unit/`**: 단위 테스트
+  - **`test_agents/`**: Agent 테스트
+  - **`test_tools/`**: Tool 테스트
+  - **`test_factories/`**: Factory 테스트
+- **`integration/`**: 통합 테스트
+  - **`test_workflow.py`**: 워크플로우 테스트
+
+## 🔄 워크플로우 흐름
+
+1. **Planning Agent**: 분석 계획 수립 및 키워드 확장
+2. **Human Review**: 계획 승인/거부 (CLI를 통한 사용자 입력)
+3. **Data Collection Agent**: 
+   - ArxivTool → RAGTool → 키워드 확장
+   - GoogleTrendsTool || NewsCrawlerTool (병렬 실행)
+   - 품질 검사 및 재시도 로직
+4. **Content Analysis Agent**: 
+   - 데이터 통합 분석
+   - 트렌드 티어 분류 (HOT_TRENDS, RISING_STARS)
+   - 섹션별 내용 생성 (LCEL 방식)
+5. **Report Synthesis Agent**: 보고서 합성
+6. **Writer Agent**: 최종 보고서 작성
+7. **Revision Agent**: 필요시 보고서 수정
+
+## 🚀 시작하기
+
+1. **환경 설정**: `.env.example`을 `.env`로 복사하고 설정
+2. **의존성 설치**: `pip install -r requirements.txt`
+3. **설정 검증**: `python scripts/validate_setup.py`
+4. **파이프라인 실행**: `python scripts/run_pipeline.py`
+
+## 📝 주요 특징
+
+### ✅ **실제 구현된 기능들**
+- **멀티 에이전트 아키텍처**: LangGraph 기반 워크플로우
+- **LCEL 기반 구현**: Content Analysis Agent에서 LangChain Expression Language 사용
+- **2-Tier 트렌드 분류**: HOT_TRENDS (1-2년 상용화), RISING_STARS (3-5년 핵심 기술)
+- **타입 안전성**: Pydantic 모델을 통한 데이터 검증
+- **구조화된 로깅**: Rich 기반 로깅 시스템
+- **에러 처리**: State 덤프 및 재시도 메커니즘
+- **Human-in-the-loop**: Planning 단계에서 사용자 승인
+- **병렬 데이터 수집**: GoogleTrendsTool || NewsCrawlerTool 병렬 실행
+- **품질 검사**: 내부 품질 체크 및 재시도 로직
+
+### 🔄 **워크플로우 특징**
+- **LCEL 방식**: Content Analysis Agent에서 4번의 독립적인 LLM 호출
+- **병렬 처리**: Section 2 + Section 3 병렬 생성
+- **순차 의존성**: Section 4, 5는 이전 섹션들에 의존
+- **RAG 시스템**: 참고 문서 기반 검색 강화
+- **다양한 데이터 소스**: arXiv, Google Trends, 뉴스 크롤링
+
+### 📊 **데이터 모델**
+- **PlanningOutput**: 계획 수립 결과
+- **TrendTier**: 2-Tier 트렌드 분류
+- **QualityCheckResult**: 품질 검사 결과
+- **CitationEntry**: 인용 관리
+- **DataCollectionStatus**: 데이터 수집 상태
+
+## 🔍 구현 상태 요약
+
+### ✅ **완전 구현됨**
+- 핵심 모델들 (src/core/models/)
+- 주요 에이전트들 (planning, data_collection, content_analysis)
+- 유틸리티들 (logger, error_handler, file_utils)
+- 프롬프트들 (planning, analysis, quality_checker)
+- State 정의 (graph/state.py)
+- 설정 관리 (core/settings.py)
+
+### 🔄 **플레이스홀더 상태**
+- 도구들 (tools/)
+- 문서 생성 (document/)
+- RAG 시스템 (rag/)
+- 나머지 에이전트들 (synthesis, writer, revision)
+- 워크플로우 구성 (graph/)
+- 실행 스크립트들 (scripts/)
+
+이 프로젝트는 AI 기반 로보틱스 트렌드 분석 시스템의 핵심 기능들이 구현되어 있으며, 확장 가능한 아키텍처로 설계되어 있습니다.

@@ -1,0 +1,58 @@
+# Core Framework
+langgraph
+langchain
+langchain-community
+langchain-openai
+langchain-core
+langchain-chroma
+
+
+# Data Collection
+arxiv
+pytrends
+gnews
+newspaper3k
+beautifulsoup4
+requests
+
+# Analysis
+pandas
+numpy
+scikit-learn
+
+# Document Generation
+python-docx
+docx2pdf
+pypdf
+
+# PDF Processing
+pypdf
+PyPDF2
+pymupdf
+
+# Embeddings
+sentence-transformers
+openai
+
+# Retrieval
+rank-bm25
+
+# CLI
+rich
+click
+
+# Data Validation
+pydantic
+pydantic-settings
+
+# Utils
+python-dotenv
+tenacity
+
+# Testing
+pytest
+pytest-asyncio
+asyncio
+
+einops
+nest_asyncio
