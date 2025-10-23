@@ -4,7 +4,7 @@ Quality Check 관련 모델
 QualityCheckResult: 데이터 품질 검증 결과
 RetryAction: 재시도 액션 상세 정보
 """
-from pydantic import BaseModel, Field, field_validator
+from src.core.patterns.base_model import BaseModel, Field, field_validator
 from typing import Dict, List, Literal, Optional, Any
 
 

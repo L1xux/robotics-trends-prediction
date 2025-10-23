@@ -3,7 +3,7 @@ Revision 관련 모델
 
 RevisionDecision: 수정 유형 결정 (SMALL/LARGE)
 """
-from pydantic import BaseModel, Field
+from src.core.patterns.base_model import BaseModel, Field
 
 
 class RevisionDecision(BaseModel):

@@ -4,7 +4,7 @@
 Planning Tools
 
 1. PlanningTool: 초기 계획 생성
-2. ResearchPlanningTool: 사용자 피드백 기반 계획 개선
+2. ResearchPlanningUtil: 사용자 피드백 기반 계획 개선
 """
 
 import json
@@ -28,7 +28,7 @@ class PlanningInput(BaseModel):
     )
 
 
-class PlanningTool(BaseTool):
+class PlanningUtil(BaseTool):
     """
     Planning Tool (초기 계획 생성)
     
@@ -302,7 +302,7 @@ Output the plan as valid JSON with this exact structure.
 
 
 # ========================================
-# 2. ResearchPlanningTool (피드백 기반 개선)
+# 2. ResearchPlanningUtil (피드백 기반 개선)
 # ========================================
 
 class ResearchPlanningInput(BaseModel):
@@ -319,7 +319,7 @@ class ResearchPlanningInput(BaseModel):
     )
 
 
-class ResearchPlanningTool(BaseTool):
+class ResearchPlanningUtil(BaseTool):
     """
     Research Planning Tool (계획 개선)
     
@@ -356,7 +356,7 @@ class ResearchPlanningTool(BaseTool):
     
     def __init__(self, llm: BaseChatModel, **kwargs):
         """
-        Initialize ResearchPlanningTool
+        Initialize ResearchPlanningUtil
         
         Args:
             llm: Language model for plan refinement
@@ -381,7 +381,7 @@ class ResearchPlanningTool(BaseTool):
         Returns:
             개선된 계획 (JSON 문자열)
         """
-        print(f"\n🔧 ResearchPlanningTool: Refining plan based on feedback...")
+        print(f"\n🔧 ResearchPlanningUtil: Refining plan based on feedback...")
         
         try:
             # 프롬프트 구성
@@ -400,13 +400,13 @@ class ResearchPlanningTool(BaseTool):
             # JSON 파싱
             improved_plan = self._parse_json_response(response_text)
             
-            print(f"✅ ResearchPlanningTool: Plan refined successfully")
+            print(f"✅ ResearchPlanningUtil: Plan refined successfully")
             
             # JSON 문자열로 반환 (AgentExecutor가 파싱)
             return json.dumps(improved_plan, ensure_ascii=False)
         
         except Exception as e:
-            print(f"❌ ResearchPlanningTool failed: {e}")
+            print(f"❌ ResearchPlanningUtil failed: {e}")
             raise
     
     async def _arun(
@@ -419,7 +419,7 @@ class ResearchPlanningTool(BaseTool):
         """
         연구 계획 개선 실행 (비동기)
         """
-        print(f"\n🔧 ResearchPlanningTool: Refining plan based on feedback...")
+        print(f"\n🔧 ResearchPlanningUtil: Refining plan based on feedback...")
         
         try:
             # 프롬프트 구성
@@ -438,13 +438,13 @@ class ResearchPlanningTool(BaseTool):
             # JSON 파싱
             improved_plan = self._parse_json_response(response_text)
             
-            print(f"✅ ResearchPlanningTool: Plan refined successfully")
+            print(f"✅ ResearchPlanningUtil: Plan refined successfully")
             
             # JSON 문자열로 반환
             return json.dumps(improved_plan, ensure_ascii=False)
         
         except Exception as e:
-            print(f"❌ ResearchPlanningTool failed: {e}")
+            print(f"❌ ResearchPlanningUtil failed: {e}")
             raise
     
     def _build_system_prompt(self) -> str:
@@ -572,3 +572,5 @@ Output the improved plan as valid JSON with this exact structure:
                 return data
             else:
                 raise ValueError(f"JSON parsing failed: {e}")
+
+

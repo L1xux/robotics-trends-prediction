@@ -1,14 +1,23 @@
 """
-전역 설정 관리 (Pydantic BaseSettings)
+전역 설정 관리 (Pydantic BaseSettings with Singleton)
 환경변수 기반 설정
 """
 from pydantic_settings import BaseSettings
 from pydantic import Field
 from pathlib import Path
 from typing import Optional
+from src.core.patterns.singleton import Singleton
 
 
-class Settings(BaseSettings):
+class SettingsMeta(Singleton, type(BaseSettings)):
+    """
+    Metaclass combining Singleton and BaseSettings
+    Ensures Settings is a singleton
+    """
+    pass
+
+
+class Settings(BaseSettings, metaclass=SettingsMeta):
     """애플리케이션 전역 설정"""
     
     # ===== OpenAI =====
@@ -107,13 +116,11 @@ class Settings(BaseSettings):
         case_sensitive = False
 
 
-# 싱글톤 인스턴스
-_settings: Optional[Settings] = None
-
-
 def get_settings() -> Settings:
-    """설정 싱글톤 반환"""
-    global _settings
-    if _settings is None:
-        _settings = Settings()
-    return _settings
+    """
+    설정 싱글톤 반환
+
+    Settings는 이제 Singleton metaclass를 사용하므로
+    직접 인스턴스화해도 항상 같은 객체 반환
+    """
+    return Settings()

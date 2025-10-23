@@ -3,7 +3,7 @@ Data Collection 관련 모델
 
 DataCollectionStatus: 데이터 수집 상태 및 품질
 """
-from pydantic import BaseModel, Field, field_validator
+from src.core.patterns.base_model import BaseModel, Field, field_validator
 from typing import Dict, Literal, Optional
 
 

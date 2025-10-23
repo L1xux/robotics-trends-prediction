@@ -4,51 +4,83 @@ Data Collection Agent Prompts
 데이터 수집 에이전트가 사용하는 프롬프트들
 """
 
-# ReAct Agent System Prompt
-REACT_SYSTEM_PROMPT = """당신은 AI-로봇 기술 트렌드 보고서를 위한 데이터 수집 전문가입니다.
+SYSTEM_PAPER_KEYWORD_SUMMARY_PROMPT = [("system", """You are an expert at identifying EMERGING and SPECIFIC technology trends for 5-year forecasting.
 
-당신의 임무는 다음 과정을 통해 충분한 데이터를 수집하는 것입니다:
+**Your Mission: Find keywords that predict the FUTURE, not describe the PRESENT**
 
-1. **ArXiv 논문 분석** (arxiv_tool 사용)
-   - 주어진 키워드로 관련 논문 검색
-   - 논문의 저자 소속 기관 분석
-   - 논문에서 언급된 기술 키워드 추출
-   - 기업 언급 분석
+**PRIORITY 1 - EMERGING Technologies (SELECT THESE!):**
+- ✅ New/novel technical approaches appearing in recent papers
+- ✅ Specific method names (e.g., "neuromorphic computing", "liquid neural networks")
+- ✅ Emerging application areas (e.g., "soft robotics", "bio-inspired actuation")
+- ✅ Next-generation concepts (e.g., "edge AI", "federated learning")
+- ✅ Interdisciplinary technologies (e.g., "human-robot collaboration", "explainable robotics")
+- ✅ Specific hardware innovations (e.g., "tactile sensors", "compliant actuators")
 
-2. **키워드 확장** (ArXiv 결과 기반)
-   - 논문에서 추출된 키워드로 검색 범위 확장
-   - 트렌드 기술과 관련된 새로운 키워드 발견
+**PRIORITY 2 - Companies (ALWAYS KEEP):**
+- ✅ ALL company names indicate WHO is investing in the future
+- ✅ Companies show market validation of technologies
 
-3. **RAG 검색** (rag_tool 사용)
-   - 확장된 키워드로 전문 보고서(FTSG, WEF) 검색
-   - 5년 후 기술 전망 관련 내용 수집
-   - 인용 정보 반드시 포함
+**REJECT - Generic/Obvious Keywords (FILTER OUT!):**
+- ❌ Generic terms: "machine learning", "deep learning", "neural networks"
+- ❌ Obvious concepts: "automation", "robotics", "AI"
+- ❌ Too broad: "manufacturing", "industry", "production"
+- ❌ Implementation details: version numbers, dataset names, model sizes
+- ❌ Programming tools: languages, frameworks
 
-4. **뉴스 수집** (news_crawler_tool 사용)
-   - 확장된 키워드로 최신 뉴스 기사 수집
-   - 산업 동향 및 기업 활동 파악
-   - 인용 정보 반드시 포함
+**Strategy for 5-Year Trend Prediction:**
+1. Look for SPECIFIC technologies that are NEW in recent papers
+2. Identify CONCRETE technical methods, not broad categories
+3. Find technologies that combine multiple fields (interdisciplinary)
+4. Select keywords that will help find DETAILED expert reports and news
 
-**중요 규칙:**
-- 각 tool 호출 후 반드시 결과를 확인하고 다음 action을 결정하세요
-- citation(인용) 정보는 반드시 수집해야 합니다
-- 데이터가 충분한지 판단하면서 진행하세요
-- tool을 순차적으로 사용하세요 (arxiv → rag → news 순서 권장)
+**Output:** JSON list of 25-35 keywords (20-25 emerging tech + companies)
+Format: ["specific_tech1", "emerging_method2", "company1", ...]
 
-**ReAct Format:**
-Thought: [현재 상황 분석 및 다음 행동 계획]
-Action: [tool 이름]
-Action Input: [tool 입력 파라미터 JSON]
-Observation: [tool 실행 결과]
-... (필요시 반복)
-Thought: [데이터 충분성 판단]
-Final Answer: [수집 완료 메시지 및 요약]
+Remember: We can find "machine learning" anywhere. We need SPECIFIC technologies like "sim-to-real transfer" or "tactile manipulation"!"""),
+            ("user", """**User's Original Query:**
+{initial_keywords}
 
-도구 사용 예시:
-- arxiv_tool: {"keywords": ["humanoid robot", "manufacturing"], "date_range": "2022-01-01 to 2025-10-22", "categories": "cs.RO,cs.AI", "max_results": "100"}
-- rag_tool: {"query": "humanoid robots in manufacturing future trends", "top_k": 10, "search_type": "hybrid_mmr"}
-- news_crawler_tool: {"keywords": ["embodied AI", "industrial robotics"], "date_range": "3 years", "sources": 5}
-"""
+**Recent Paper Titles (Latest Research Trends):**
+{paper_titles}
+
+**Raw Keywords Extracted from Papers:**
+{raw_keywords}
+
+**Companies Mentioned in Papers:**
+{companies}
+
+**Your Task:**
+Analyze the recent paper titles and keywords to identify **ROBOTICS/AUTOMATION-RELATED** technologies.
+
+**Context:** User query is "{initial_keywords}" - focus on ROBOTICS and AI technologies broadly.
+
+Selection criteria:
+1. Technology MUST relate to **robotics, AI, or automation** (any application domain)
+2. EMERGING/SPECIFIC technologies that are NEW or NOVEL  
+3. Technologies appearing repeatedly in recent papers (trending up)
+4. Include: robot hardware, algorithms, control, perception, applications
+5. ALL companies (they show market activity)
+
+Filter and return 25-35 keywords for finding future robotics trends:
+
+**✅ KEEP - Robotics Technologies:**
+- Robot hardware (actuators, sensors, mechanisms, grippers)
+- Robot AI/learning (imitation learning, sim-to-real, RL for robots)
+- Robot perception (3D vision, tactile, depth estimation)
+- Robot control (force control, compliance, motion planning)
+- Robot applications (manufacturing, surgery, service, warehouse, etc.)
+- Specific tech terms (adaptive welding, bin-picking, collaborative robots)
+
+**❌ REJECT - Non-Robotics:**
+- Pure ML/statistics without robotics (Bayesian optimization, clustering)
+- General software (JSON, API, databases)
+- Business jargon (market growth, ROI, stakeholders)
+- Version numbers (GPT-4, v2.0, Python 3)
+
+**Note:** "Differential Mechanism" = robot hardware ✅
+"Gaussian Splats" = 3D perception for robots ✅  
+"Multi-Agent Learning" = robot coordination ✅
+Keep if it can be used BY or FOR robots!""")]
 
 # 데이터 충분성 판단 Prompt
 SUFFICIENCY_CHECK_PROMPT = """당신은 AI-로봇 기술 트렌드 보고서의 데이터 충분성을 평가하는 전문가입니다.

@@ -4,8 +4,67 @@ LangGraph State Definition
 전체 파이프라인에서 사용하는 공유 상태 정의
 """
 
-from typing import TypedDict, Optional, List, Dict, Any, Literal
+from typing import TypedDict, Optional, List, Dict, Any
 from typing_extensions import NotRequired
+from enum import Enum
+
+
+class WorkflowStatus(str, Enum):
+    """Workflow status constants"""
+    # Initial
+    INITIALIZED = "initialized"
+
+    # Planning phase
+    PLANNING_COMPLETE = "planning_complete"
+    PLANNING_ACCEPTED = "planning_accepted"
+    PLANNING_REJECTED = "planning_rejected"
+    PLANNING_REFINED = "planning_refined"
+    PLANNING_FAILED = "planning_failed"
+
+    # Data collection phase
+    DATA_COLLECTION_COMPLETE = "data_collection_complete"
+    DATA_COLLECTION_FAILED = "data_collection_failed"
+
+    # Analysis phase
+    ANALYSIS_COMPLETE = "analysis_complete"
+    ANALYSIS_FAILED = "analysis_failed"
+
+    # Synthesis phase
+    SYNTHESIS_COMPLETE = "synthesis_complete"
+    SYNTHESIS_FAILED = "synthesis_failed"
+
+    # Writer phase
+    WRITER_COMPLETE = "writer_complete"
+    WRITER_FAILED = "writer_failed"
+
+    # Review phase
+    REPORT_ACCEPTED = "report_accepted"
+    NEEDS_MINOR_REVISION = "needs_minor_revision"
+    NEEDS_MAJOR_REVISION = "needs_major_revision"
+    REVIEW_FAILED = "review_failed"
+
+    # Revision phase
+    REVISION_COMPLETE = "revision_complete"
+    REVISION_FAILED = "revision_failed"
+    NEEDS_REVISION = "needs_revision"
+    NEEDS_RECOLLECTION = "needs_recollection"
+
+    # Final states
+    COMPLETED = "completed"
+    WORKFLOW_COMPLETE = "workflow_complete"
+    WORKFLOW_FAILED = "workflow_failed"
+
+
+class RevisionType(str, Enum):
+    """Revision type classification"""
+    MINOR = "minor"
+    MAJOR = "major"
+
+
+class RevisionDecision(str, Enum):
+    """Legacy revision decision (deprecated)"""
+    SMALL = "SMALL"
+    LARGE = "LARGE"
 
 
 class PipelineState(TypedDict):
@@ -70,11 +129,11 @@ class PipelineState(TypedDict):
     human_review_2: NotRequired[bool]  # True if review completed
     review_feedback: NotRequired[str]  # User feedback
     feedback_classification: NotRequired[Dict[str, Any]]  # Feedback severity analysis
-    revision_type: NotRequired[Literal["minor", "major"]]  # Revision type needed
-    
+    revision_type: NotRequired[RevisionType]  # Revision type needed
+
     # ===== Phase 9: Revision =====
     revision_count: NotRequired[int]  # Number of revisions performed
-    revision_decision: NotRequired[Literal["SMALL", "LARGE"]]  # Legacy field
+    revision_decision: NotRequired[RevisionDecision]  # Legacy field (deprecated)
     
     # ===== Phase 10: PDF Generation (Future) =====
     pdf_path: NotRequired[str]  # 생성된 PDF 파일 경로
@@ -82,20 +141,7 @@ class PipelineState(TypedDict):
     translation_failed: NotRequired[bool] # 한국어 번역 실패 여부
     
     # ===== Workflow Control =====
-    status: str  # 현재 워크플로우 상태
-        # Phase 1-3:
-        # - "initialized"
-        # - "planning_complete", "planning_accepted", "planning_rejected", "planning_refined"
-        # - "data_collection_complete", "data_collection_failed"
-        # - "analysis_complete", "analysis_failed"
-        # Phase 4-7:
-        # - "synthesis_complete", "synthesis_failed"
-        # - "writer_complete", "writer_failed"
-        # - "report_accepted", "needs_minor_revision", "needs_major_revision"
-        # - "revision_complete", "revision_failed"
-        # - "review_failed"
-        # Final:
-        # - "workflow_complete", "workflow_failed"
+    status: str  # Current workflow status (use WorkflowStatus enum values)
     
     error: NotRequired[str]  # 에러 발생 시 에러 메시지
     
@@ -119,7 +165,7 @@ def create_initial_state(user_input: str) -> PipelineState:
     
     return PipelineState(
         user_input=user_input,
-        status="initialized",
+        status=WorkflowStatus.INITIALIZED.value,
         retry_count=0,
         max_retries=3,
         created_at=datetime.now().isoformat(),

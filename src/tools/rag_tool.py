@@ -417,3 +417,5 @@ class RAGTool(BaseTool):
     async def _arun(self, *args, **kwargs):
         """비동기 실행 (LangChain 호환)"""
         raise NotImplementedError("RAGTool does not support async execution")
+
+

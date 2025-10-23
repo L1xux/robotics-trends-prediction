@@ -5,7 +5,8 @@ PlanningOutput: Planning Agent의 최종 출력
 CollectionPlan: 데이터 수집 계획
 ArxivConfig, TrendsConfig, NewsConfig: 각 데이터 소스별 설정
 """
-from pydantic import BaseModel, Field, field_validator
+from src.core.patterns.base_model import BaseModel, ImmutableModel
+from pydantic import Field, field_validator
 from typing import Any, List, Dict, Optional
 
 

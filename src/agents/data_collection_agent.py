@@ -10,8 +10,9 @@ Data Collection Agent (ReAct Architecture)
 
 import json
 import time
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, Tuple
 from datetime import datetime
+from enum import Enum
 
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
@@ -20,15 +21,37 @@ from langchain_core.prompts import PromptTemplate
 
 from src.agents.base.base_agent import BaseAgent
 from src.agents.base.agent_config import AgentConfig
-from src.graph.state import PipelineState
+from src.graph.state import PipelineState, WorkflowStatus
 from src.core.settings import Settings
 from src.core.models.citation_model import (
-    ArXivCitation, NewsCitation, RAGCitation, CitationCollection
+    CitationCollection
 )
 from config.prompts.data_collections_prompts import (
-    REACT_SYSTEM_PROMPT,
-    SUFFICIENCY_CHECK_PROMPT
+    SUFFICIENCY_CHECK_PROMPT,
+    SYSTEM_PAPER_KEYWORD_SUMMARY_PROMPT
 )
+
+
+class CollectionConstants:
+    """Constants for data collection"""
+    MAX_ATTEMPTS = 3
+    MAX_AGENT_ITERATIONS = 25
+    MAX_EXECUTION_TIME = 1200  # 20 minutes
+    SUFFICIENCY_MODEL = "gpt-4o"
+    SUFFICIENCY_TEMPERATURE = 0.3
+    ARXIV_MAX_RETRIES = 3
+    RETRY_SLEEP_SECONDS = 3
+
+    # Arxiv settings
+    DEFAULT_ARXIV_CATEGORIES = "cs.RO,cs.AI"
+    MAX_RESULTS_PER_KEYWORD = 100
+    YEARS_BACK = 3
+
+    # Keyword settings
+    MAX_RECENT_PAPERS_ANALYSIS = 20
+    MIN_COMPANY_MENTIONS = 2
+    MAX_RAW_KEYWORDS_FOR_LLM = 100
+    MAX_PAPER_TITLES_FOR_LLM = 15
 
 
 class DataCollectionAgent(BaseAgent):
@@ -61,27 +84,31 @@ class DataCollectionAgent(BaseAgent):
     ):
         super().__init__(llm, tools, config)
         self.settings = settings or Settings()
-        
-        # Raw tools for direct access
-        self.raw_tools = raw_tools or []
-        self.arxiv_tool = self.raw_tools[0] if len(self.raw_tools) > 0 else None
-        self.rag_tool = self.raw_tools[1] if len(self.raw_tools) > 1 else None
-        self.news_tool = self.raw_tools[2] if len(self.raw_tools) > 2 else None
-        
-        # 충분성 판단용 LLM (GPT-4o)
-        self.sufficiency_llm = ChatOpenAI(
-            model="gpt-4o",
-            temperature=0.3
+        self._raw_tools = raw_tools or []
+        self._arxiv_tool: Optional[Any] = None
+        self._rag_tool: Optional[Any] = None
+        self._news_tool: Optional[Any] = None
+        self._initialize_tools()
+
+        # Sufficiency check LLM
+        self._sufficiency_llm = ChatOpenAI(
+            model=CollectionConstants.SUFFICIENCY_MODEL,
+            temperature=CollectionConstants.SUFFICIENCY_TEMPERATURE
         )
-        
-        # ReAct Agent 설정 (RAG + News만 사용)
+
+        # ReAct Agent
+        self._agent_executor: Optional[AgentExecutor] = None
         self._setup_react_agent()
+
+    def _initialize_tools(self) -> None:
+        """Initialize raw tools by index"""
+        if len(self._raw_tools) >= 3:
+            self._arxiv_tool = self._raw_tools[0]
+            self._rag_tool = self._raw_tools[1]
+            self._news_tool = self._raw_tools[2]
     
-    def _setup_react_agent(self):
-        """ReAct Agent 설정 (RAG + News tool만)"""
-        # tools는 이미 RAG + News만 포함 (workflow.py에서 설정)
-        
-        # ReAct Prompt Template
+    def _setup_react_agent(self) -> None:
+        """Setup ReAct Agent with RAG + News tools only"""
         react_template = """You are a data collection specialist for AI-Robotics trend reports.
 
 You have already collected ArXiv papers and extracted technical keywords.
@@ -111,26 +138,24 @@ Begin!
 
 Question: {input}
 Thought:{agent_scratchpad}"""
-        
+
         react_prompt = PromptTemplate(
             template=react_template,
             input_variables=["input", "tools", "tool_names", "agent_scratchpad"]
         )
-        
-        # ReAct Agent 생성 (RAG + News만)
-        self.react_agent = create_react_agent(
+
+        react_agent = create_react_agent(
             llm=self.llm,
-            tools=self.tools,  # RAG + News wrappers
+            tools=self.tools,
             prompt=react_prompt
         )
-        
-        # Agent Executor
-        self.agent_executor = AgentExecutor(
-            agent=self.react_agent,
-            tools=self.tools,  # RAG + News wrappers
+
+        self._agent_executor = AgentExecutor(
+            agent=react_agent,
+            tools=self.tools,
             verbose=True,
-            max_iterations=25,
-            max_execution_time=1200,  # 20분
+            max_iterations=CollectionConstants.MAX_AGENT_ITERATIONS,
+            max_execution_time=CollectionConstants.MAX_EXECUTION_TIME,
             handle_parsing_errors=True,
             return_intermediate_steps=True
         )
@@ -211,7 +236,7 @@ Thought:{agent_scratchpad}"""
                 )
                 
                 # ReAct Agent 실행
-                result = await self.agent_executor.ainvoke({
+                result = await self._agent_executor.ainvoke({
                     "input": question
                 })
                 
@@ -296,7 +321,7 @@ Thought:{agent_scratchpad}"""
         state["rag_results"] = rag_results or {}
         state["expanded_keywords"] = expanded_keywords
         state["citations"] = citations
-        state["status"] = "data_collection_complete"
+        state["status"] = WorkflowStatus.DATA_COLLECTION_COMPLETE.value
         
         return state
     
@@ -463,53 +488,48 @@ Continue until you have comprehensive coverage."""
         planning_output: Any
     ) -> Optional[Dict[str, Any]]:
         """ArXiv 논문 수집 (키워드별 병렬 검색)"""
-        max_retries = 3
-        
-        for retry in range(max_retries):
+        for retry in range(CollectionConstants.ARXIV_MAX_RETRIES):
             try:
-                if not self.arxiv_tool:
+                if not self._arxiv_tool:
                     print("   ⚠️  ArXiv Tool을 찾을 수 없습니다.")
                     return None
-                
-                # collection_plan 사용
+
+                # Get categories from collection plan
                 categories_str = planning_output.collection_plan.arxiv.categories
-                
-                # categories가 "all"이면 기본 카테고리 사용
                 if categories_str.lower() == "all":
-                    categories_str = "cs.RO,cs.AI"
-                
+                    categories_str = CollectionConstants.DEFAULT_ARXIV_CATEGORIES
+
                 print(f"   📚 카테고리: {categories_str}")
                 print(f"   🔑 키워드: {len(keywords)}개 (각 키워드당 병렬 검색)")
-                print(f"   🎯 키워드당 최대: 100편\n")
-                
-                # 키워드별 병렬 검색 (최근 3년)
-                result = self.arxiv_tool.search_by_keywords_parallel(
+                print(f"   🎯 키워드당 최대: {CollectionConstants.MAX_RESULTS_PER_KEYWORD}편\n")
+
+                # Search ArXiv papers in parallel
+                result = self._arxiv_tool.search_by_keywords_parallel(
                     keywords=keywords,
                     categories=categories_str,
-                    max_results_per_keyword=100,
-                    years_back=3
+                    max_results_per_keyword=CollectionConstants.MAX_RESULTS_PER_KEYWORD,
+                    years_back=CollectionConstants.YEARS_BACK
                 )
-                
-                # 성공하면 반환
+
                 if result and result.get("total_count", 0) > 0:
                     return result
                 else:
-                    print(f"   ⚠️  논문을 찾지 못했습니다. 재시도 {retry + 1}/{max_retries}")
-                    if retry < max_retries - 1:
-                        time.sleep(3)
+                    print(f"   ⚠️  논문을 찾지 못했습니다. 재시도 {retry + 1}/{CollectionConstants.ARXIV_MAX_RETRIES}")
+                    if retry < CollectionConstants.ARXIV_MAX_RETRIES - 1:
+                        time.sleep(CollectionConstants.RETRY_SLEEP_SECONDS)
                         continue
                     return result
-            
+
             except Exception as e:
-                print(f"   ❌ ArXiv 수집 에러 (시도 {retry + 1}/{max_retries}): {e}")
-                if retry < max_retries - 1:
-                    print(f"   🔄 3초 후 재시도...")
-                    time.sleep(3)
+                print(f"   ❌ ArXiv 수집 에러 (시도 {retry + 1}/{CollectionConstants.ARXIV_MAX_RETRIES}): {e}")
+                if retry < CollectionConstants.ARXIV_MAX_RETRIES - 1:
+                    print(f"   🔄 {CollectionConstants.RETRY_SLEEP_SECONDS}초 후 재시도...")
+                    time.sleep(CollectionConstants.RETRY_SLEEP_SECONDS)
                     continue
                 else:
                     print(f"   error")
                     return None
-        
+
         return None
     
     
@@ -543,14 +563,14 @@ Continue until you have comprehensive coverage."""
         companies_mentioned = set()
         if "companies_mentioned" in arxiv_data:
             for company, count in arxiv_data["companies_mentioned"].items():
-                if count >= 2:  # 2번 이상 언급된 기업만
+                if count >= CollectionConstants.MIN_COMPANY_MENTIONS:
                     companies_mentioned.add(company)
         
         # 3. 논문 제목 분석 (최신 기술 경향 파악)
         recent_papers_info = []
         if arxiv_data.get("papers"):
-            # 최신 논문 20개 정도만 분석 (최신 트렌드)
-            for paper in arxiv_data["papers"][:20]:
+            # 최신 논문만 분석 (최신 트렌드)
+            for paper in arxiv_data["papers"][:CollectionConstants.MAX_RECENT_PAPERS_ANALYSIS]:
                 recent_papers_info.append({
                     "title": paper.get("title", ""),
                     "year": paper.get("published", "")[:4]  # YYYY만 추출
@@ -601,94 +621,16 @@ Continue until you have comprehensive coverage."""
         from langchain_core.output_parsers import StrOutputParser
         
         # 최신 논문 제목 요약
-        paper_titles = "\n".join([f"- ({p['year']}) {p['title']}" for p in recent_papers[:15]])
-        
-        filter_prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an expert at identifying EMERGING and SPECIFIC technology trends for 5-year forecasting.
+        paper_titles = "\n".join([f"- ({p['year']}) {p['title']}" for p in recent_papers[:CollectionConstants.MAX_PAPER_TITLES_FOR_LLM]])
 
-**Your Mission: Find keywords that predict the FUTURE, not describe the PRESENT**
-
-**PRIORITY 1 - EMERGING Technologies (SELECT THESE!):**
-- ✅ New/novel technical approaches appearing in recent papers
-- ✅ Specific method names (e.g., "neuromorphic computing", "liquid neural networks")
-- ✅ Emerging application areas (e.g., "soft robotics", "bio-inspired actuation")
-- ✅ Next-generation concepts (e.g., "edge AI", "federated learning")
-- ✅ Interdisciplinary technologies (e.g., "human-robot collaboration", "explainable robotics")
-- ✅ Specific hardware innovations (e.g., "tactile sensors", "compliant actuators")
-
-**PRIORITY 2 - Companies (ALWAYS KEEP):**
-- ✅ ALL company names indicate WHO is investing in the future
-- ✅ Companies show market validation of technologies
-
-**REJECT - Generic/Obvious Keywords (FILTER OUT!):**
-- ❌ Generic terms: "machine learning", "deep learning", "neural networks"
-- ❌ Obvious concepts: "automation", "robotics", "AI"
-- ❌ Too broad: "manufacturing", "industry", "production"
-- ❌ Implementation details: version numbers, dataset names, model sizes
-- ❌ Programming tools: languages, frameworks
-
-**Strategy for 5-Year Trend Prediction:**
-1. Look for SPECIFIC technologies that are NEW in recent papers
-2. Identify CONCRETE technical methods, not broad categories
-3. Find technologies that combine multiple fields (interdisciplinary)
-4. Select keywords that will help find DETAILED expert reports and news
-
-**Output:** JSON list of 25-35 keywords (20-25 emerging tech + companies)
-Format: ["specific_tech1", "emerging_method2", "company1", ...]
-
-Remember: We can find "machine learning" anywhere. We need SPECIFIC technologies like "sim-to-real transfer" or "tactile manipulation"!"""),
-            ("user", """**User's Original Query:**
-{initial_keywords}
-
-**Recent Paper Titles (Latest Research Trends):**
-{paper_titles}
-
-**Raw Keywords Extracted from Papers:**
-{raw_keywords}
-
-**Companies Mentioned in Papers:**
-{companies}
-
-**Your Task:**
-Analyze the recent paper titles and keywords to identify **ROBOTICS/AUTOMATION-RELATED** technologies.
-
-**Context:** User query is "{initial_keywords}" - focus on ROBOTICS and AI technologies broadly.
-
-Selection criteria:
-1. Technology MUST relate to **robotics, AI, or automation** (any application domain)
-2. EMERGING/SPECIFIC technologies that are NEW or NOVEL  
-3. Technologies appearing repeatedly in recent papers (trending up)
-4. Include: robot hardware, algorithms, control, perception, applications
-5. ALL companies (they show market activity)
-
-Filter and return 25-35 keywords for finding future robotics trends:
-
-**✅ KEEP - Robotics Technologies:**
-- Robot hardware (actuators, sensors, mechanisms, grippers)
-- Robot AI/learning (imitation learning, sim-to-real, RL for robots)
-- Robot perception (3D vision, tactile, depth estimation)
-- Robot control (force control, compliance, motion planning)
-- Robot applications (manufacturing, surgery, service, warehouse, etc.)
-- Specific tech terms (adaptive welding, bin-picking, collaborative robots)
-
-**❌ REJECT - Non-Robotics:**
-- Pure ML/statistics without robotics (Bayesian optimization, clustering)
-- General software (JSON, API, databases)
-- Business jargon (market growth, ROI, stakeholders)
-- Version numbers (GPT-4, v2.0, Python 3)
-
-**Note:** "Differential Mechanism" = robot hardware ✅
-"Gaussian Splats" = 3D perception for robots ✅  
-"Multi-Agent Learning" = robot coordination ✅
-Keep if it can be used BY or FOR robots!""")
-        ])
+        filter_prompt = ChatPromptTemplate.from_messages(SYSTEM_PAPER_KEYWORD_SUMMARY_PROMPT)
         
         try:
             chain = filter_prompt | self.llm | StrOutputParser()
             response = await chain.ainvoke({
                 "initial_keywords": ", ".join(initial_keywords),
                 "paper_titles": paper_titles if paper_titles else "No recent papers available",
-                "raw_keywords": ", ".join(raw_keywords[:100]),  # 너무 많으면 처음 100개만
+                "raw_keywords": ", ".join(raw_keywords[:CollectionConstants.MAX_RAW_KEYWORDS_FOR_LLM]),
                 "companies": ", ".join(companies) if companies else "None mentioned"
             })
             
@@ -801,4 +743,5 @@ Keep if it can be used BY or FOR robots!""")
                 "recommendations": [],
                 "reasoning": "Default judgment"
             }
-    
+
+

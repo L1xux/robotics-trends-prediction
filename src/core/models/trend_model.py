@@ -3,7 +3,7 @@ Trend 분석 관련 모델
 
 TrendTier: 기술 트렌드 2-Tier 분류
 """
-from pydantic import BaseModel, Field, field_validator
+from src.core.patterns.base_model import BaseModel, Field, field_validator
 
 
 class TrendTier(BaseModel):

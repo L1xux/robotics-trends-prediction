@@ -8,7 +8,7 @@ Citation formats for different data sources:
 """
 
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from src.core.patterns.base_model import BaseModel, Field
 
 
 class CitationEntry(BaseModel):

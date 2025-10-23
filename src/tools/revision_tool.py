@@ -1,140 +1,57 @@
-"""
-Revision Tool
+# src/tools/revision_tool.py
 
-Writer Agent가 사용자 피드백을 받아 RevisionAgent를 호출하는 Tool
-간단한 내용 수정에 사용됨
+"""
+Revision Tool (Decision Marker)
+
+Agent가 말투/표현 수정이 필요하다고 판단했을 때 사용하는 간단한 마커
+실제 revision 로직은 WriterAgent에서 처리
 """
 
-from typing import Dict, Any
+from typing import Any, Optional
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 
 class RevisionInput(BaseModel):
     """Revision Tool 입력 스키마"""
-    
-    current_report: str = Field(
-        description="Current full report content (markdown)"
-    )
-    user_feedback: str = Field(
-        description="User feedback for revision"
-    )
-    feedback_severity: str = Field(
-        default="minor",
-        description="Feedback severity: 'minor' or 'major'"
+
+    reason: str = Field(
+        description="Brief reason why revision is needed (from user feedback)"
     )
 
 
 class RevisionTool(BaseTool):
     """
-    Revision Tool
-    
-    사용자 피드백을 받아 RevisionAgent를 호출하여 보고서를 수정합니다.
-    
-    Use when:
-    - User wants minor changes to the report
-    - User feedback indicates simple revisions (typos, rephrasing, adding details)
-    
-    Args:
-        current_report: Current report markdown content
-        user_feedback: User's revision requests
-        feedback_severity: "minor" for simple changes
-    
-    Returns:
-        Revised report content
+    Revision Tool (간단한 decision marker)
+
+    Agent가 이 tool을 선택하면 WriterAgent가 revision 로직 실행
     """
-    
+
     name: str = "revise_report"
     description: str = """
-    Revise the current report based on user feedback.
-    
-    Use this tool when user wants to make changes to the existing report WITHOUT re-collecting data.
-    This is for minor to moderate revisions like:
-    - Rephrasing sections
-    - Adding more details to existing content
-    - Fixing errors or typos
-    - Reorganizing content
-    
+    Mark that the report needs writing improvements (NO data collection).
+
+    Use this tool when user wants:
+    - Better phrasing, tone, or style
+    - Clearer explanations
+    - Better sentence structure
+    - Content reorganization
+
+    **This tool does NOT do the actual revision.**
+    It signals to WriterAgent that revision is needed.
+
     Input:
-    - current_report: The full current report (markdown)
-    - user_feedback: User's specific feedback and requests
-    - feedback_severity: "minor" for simple changes
-    
+    - reason: Brief summary of what needs to be revised
+
     Output:
-    - Revised report (markdown)
+    - Confirmation that revision will be performed
     """
     args_schema: type[BaseModel] = RevisionInput
-    
-    # RevisionAgent will be injected
-    revision_agent: Any = Field(default=None, description="RevisionAgent instance")
-    
-    def __init__(self, revision_agent: Any, **kwargs):
-        """
-        Initialize RevisionTool
-        
-        Args:
-            revision_agent: RevisionAgent instance to use for revisions
-        """
-        super().__init__(revision_agent=revision_agent, **kwargs)
-    
-    def _run(
-        self,
-        current_report: str,
-        user_feedback: str,
-        feedback_severity: str = "minor",
-        run_manager: Any = None
-    ) -> str:
-        """
-        보고서 수정 실행 - RevisionAgent 호출
-        """
-        print(f"\n🔧 RevisionTool: Calling RevisionAgent...")
-        print(f"   Severity: {feedback_severity}")
-        print(f"   Feedback: {user_feedback[:100]}...")
-        
-        try:
-            from src.graph.state import PipelineState
-            import asyncio
-            import nest_asyncio
-            
-            # Apply nest_asyncio to allow nested event loops
-            nest_asyncio.apply()
-            
-            # Create state for revision
-            revision_state = PipelineState(
-                user_input="Revision Request",
-                status="needs_revision",
-                final_report=current_report,
-                review_feedback=user_feedback,
-                revision_type=feedback_severity
-            )
-            
-            # Call RevisionAgent
-            loop = asyncio.get_event_loop()
-            revised_state = loop.run_until_complete(self.revision_agent.execute(revision_state))
-            
-            revised_report = revised_state.get("final_report", current_report)
-            
-            print(f"✅ RevisionTool: Revision completed")
-            
-            # Return the revised report
-            return f"REVISION_COMPLETED: Report has been revised based on feedback. The revised report is ready for review."
-        
-        except Exception as e:
-            print(f"❌ RevisionTool error: {e}")
-            import traceback
-            traceback.print_exc()
-            return f"REVISION_ERROR: {str(e)}"
-    
-    async def _arun(
-        self,
-        current_report: str,
-        user_feedback: str,
-        feedback_severity: str = "minor",
-        run_manager: Any = None
-    ) -> str:
-        """
-        보고서 수정 실행 (비동기)
-        """
-        # Just call sync version
-        return self._run(current_report, user_feedback, feedback_severity, run_manager)
 
+    def _run(self, reason: str, run_manager: Optional[Any] = None) -> str:
+        """간단한 마커 반환"""
+        return f"REVISION_NEEDED: {reason}"
+
+    async def _arun(self, reason: str, run_manager: Optional[Any] = None) -> str:
+        """간단한 마커 반환 (비동기)"""
+        return f"REVISION_NEEDED: {reason}"

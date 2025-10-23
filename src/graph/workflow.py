@@ -1,64 +1,62 @@
 """
-LangGraph Workflow
+LangGraph Workflow (Clean Architecture with Design Patterns)
 
-전체 AI-Robotics Report Generator 파이프라인 조립
+전체 AI-Robotics Report Generator 파이프라인
 
-Workflow:
-    START
-      ↓
-    Planning Agent (초기 계획 + Human Review + Refinement)
-      ↓
-    Data Collection Agent (with internal quality check + retry)
-      ↓
-    Content Analysis Agent (with LCEL + RAG)
-      ↓
-    END
+Design Patterns:
+- Factory Pattern: Agent/Tool/LLM 생성
+- IoC Container: 의존성 주입
+- Builder Pattern: Workflow 구성
 """
 
 from typing import Optional, Dict, Any
 from langgraph.graph import StateGraph, START, END
 from datetime import datetime
 from dotenv import load_dotenv
-import asyncio
-    
-# State
-from src.graph.state import PipelineState, create_initial_state
+from langchain_openai import ChatOpenAI
 
-# Nodes - bind_nodes만 import
+# Core
+from src.graph.state import PipelineState, create_initial_state
 from src.graph.nodes import bind_nodes
+from src.graph.edges import route_after_writer, route_after_revision
+from src.core.settings import get_settings
+from src.agents.base.agent_config import AgentConfig
+from src.tools.base.tool_config import ToolConfig
 
 # Agents
-from langchain_openai import ChatOpenAI
 from src.agents.planning_agent import PlanningAgent
 from src.agents.data_collection_agent import DataCollectionAgent
-from src.agents.content_analysis_agent import ContentAnalysisAgent
-from src.agents.report_synthesis_agent import ReportSynthesisAgent
 from src.agents.writer_agent import WriterAgent
-from src.agents.revision_agent import RevisionAgent
-from src.agents.base.agent_config import AgentConfig
+
+# LLMs
+from src.llms.content_analysis_llm import ContentAnalysisLLM
+from src.llms.report_synthesis_llm import ReportSynthesisLLM
+from src.llms.revision_llm import RevisionLLM
+
+# Utils
+from src.utils.planning_util import PlanningUtil, ResearchPlanningUtil
+from src.utils.refine_plan_util import RefinePlanUtil
+from src.utils.feedback_classifier_util import FeedbackClassifierUtil
+from src.utils.data_collect_util import RAGUtilWrapper, NewsCrawlerUtilWrapper
 
 # Tools
-from src.tools.planning_tool import PlanningTool, ResearchPlanningTool
-from src.tools.refine_plan_tool import RefinePlanTool
-from src.tools.feedback_classifier_tool import FeedbackClassifierTool
 from src.tools.arxiv_tool import ArxivTool
 from src.tools.rag_tool import RAGTool
 from src.tools.news_crawler_tool import NewsCrawlerTool
-from src.tools.base.tool_config import ToolConfig
-
-# Settings
-from src.core.settings import get_settings
+from src.tools.revision_tool import RevisionTool
+from src.tools.recollection_tool import RecollectionTool
 
 load_dotenv()
 
 
-class WorkflowManager:
+class WorkflowBuilder:
     """
-    워크플로우 관리 클래스
-    
-    Agent와 Tool 초기화 및 워크플로우 실행을 담당
+    Workflow Builder (Builder Pattern)
+
+    Agent와 Tool을 IoC Container와 Factory를 통해 생성하고
+    LangGraph Workflow를 조립
     """
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -66,380 +64,287 @@ class WorkflowManager:
         temperature: float = 0.0
     ):
         """
-        WorkflowManager 초기화
-        
+        Initialize WorkflowBuilder
+
         Args:
-            api_key: OpenAI API Key (None이면 환경변수에서 로드)
-            model: 사용할 LLM 모델
+            api_key: OpenAI API Key
+            model: LLM model name
             temperature: LLM temperature
         """
         self.settings = get_settings()
         self.model = model
         self.temperature = temperature
-        
-        # LLM 초기화
+
+        # LLM
         self.llm = ChatOpenAI(
             model=model,
             temperature=temperature,
-            api_key=api_key
+            api_key=api_key or self.settings.openai_api_key
         )
-        
-        # Agents (초기화 후 설정됨)
-        self.planning_agent = None
-        self.data_collection_agent = None
-        self.content_analysis_agent = None
-        
-        # 초기화
-        self._initialize_tools_and_agents()
-    
-    def _initialize_tools_and_agents(self):
-        """Tools와 Agents 초기화"""
-        
-        print("\n" + "="*60)
-        print("🔧 Initializing Tools and Agents...")
-        print("="*60 + "\n")
-        
-        # ========================================
-        # 1. Tools 초기화
-        # ========================================
-        
-        print("📦 Initializing Tools...")
-        
-        # PlanningTool
-        planning_tool = PlanningTool(llm=self.llm)
-        print(f"   ✓ PlanningTool")
-        
-        # ResearchPlanningTool
-        refinement_tool = ResearchPlanningTool(llm=self.llm)
-        print(f"   ✓ ResearchPlanningTool")
-        
-        # RefinePlanTool (Human Review + Refinement)
-        self.refine_plan_tool = RefinePlanTool(refinement_tool=refinement_tool)
-        print(f"   ✓ RefinePlanTool")
-        
-        # FeedbackClassifierTool (Human Review 2 - Feedback Classification)
-        self.feedback_classifier_tool = FeedbackClassifierTool(llm=self.llm)
-        print(f"   ✓ FeedbackClassifierTool")
-        
-        # ArxivTool
-        arxiv_config = ToolConfig(
-            name="ArxivTool",
-            description="Search and retrieve academic papers from arXiv",
-            timeout=300,
-            retry_count=3
-        )
-        arxiv_tool = ArxivTool(config=arxiv_config)
-        print(f"   ✓ {arxiv_config.name}")
-        
-        # RAGTool
-        rag_config = ToolConfig(
-            name="RAGTool",
-            description="Hybrid retrieval from reference documents (FTSG, WEF)",
-            timeout=3000,
-            retry_count=2
-        )
-        rag_tool = RAGTool(config=rag_config, settings=self.settings)
-        print(f"   ✓ {rag_config.name}")
-        
-        # NewsCrawlerTool
-        news_config = ToolConfig(
-            name="NewsCrawlerTool",
-            description="Crawl news articles from multiple sources",
-            timeout=180,
-            retry_count=3
-        )
-        news_tool = NewsCrawlerTool(config=news_config)
-        print(f"   ✓ {news_config.name}\n")
-        
-        # ========================================
-        # 2. Agents 초기화
-        # ========================================
-        
-        print("🤖 Initializing Agents...")
-        
-        # Planning Agent (with planning tools)
-        planning_config = AgentConfig(
-            name="PlanningAgent",
-            description="Analyzes user input and creates data collection plan",
-            model_name=self.model,
-            temperature=self.temperature,
-            retry_count=3
-        )
-        self.planning_agent = PlanningAgent(
-            llm=self.llm,
-            tools=[planning_tool, refinement_tool],  # PlanningTool + ResearchPlanningTool
-            config=planning_config
-        )
-        print(f"   ✓ {planning_config.name}")
-        
-        # Data Collection Agent (RAG + News tools for ReAct)
-        from src.tools.data_collect_tool import (
-            RAGToolWrapper,
-            NewsCrawlerWrapper
-        )
-        
-        # Wrap RAG and News tools for LangChain compatibility (ArXiv는 직접 실행)
-        rag_wrapper = RAGToolWrapper(rag_tool=rag_tool)
-        news_wrapper = NewsCrawlerWrapper(news_tool=news_tool)
-        
-        data_collection_config = AgentConfig(
-            name="DataCollectionAgent",
-            description="Collects data: ArXiv first, then ReAct with RAG + News",
-            model_name=self.model,
-            temperature=self.temperature,
-            retry_count=3
-        )
-        self.data_collection_agent = DataCollectionAgent(
-            llm=self.llm,
-            tools=[rag_wrapper, news_wrapper],  # ReAct Agent가 사용할 tool (RAG + News만)
-            raw_tools=[arxiv_tool, rag_tool, news_tool],  # 직접 접근용 (ArXiv, citation)
-            config=data_collection_config,
-            settings=self.settings
-        )
-        print(f"   ✓ {data_collection_config.name}")
-        
-        # Content Analysis Agent (needs RAG tool for citation)
-        content_analysis_config = AgentConfig(
-            name="ContentAnalysisAgent",
-            description="Analyzes collected data and generates report sections",
-            model_name=self.model,
-            temperature=self.temperature,
-            retry_count=2
-        )
-        self.content_analysis_agent = ContentAnalysisAgent(
-            llm=self.llm,
-            tools=[rag_tool],  # RAG tool for additional reference
-            config=content_analysis_config
-        )
-        print(f"   ✓ {content_analysis_config.name}")
-        
-        # Report Synthesis Agent
-        report_synthesis_config = AgentConfig(
-            name="ReportSynthesisAgent",
-            description="Generates Summary, Introduction, Conclusion, References, Appendix",
-            model_name=self.model,
-            temperature=self.temperature,
-            retry_count=2
-        )
-        self.report_synthesis_agent = ReportSynthesisAgent(
-            llm=self.llm,
-            tools=[],
-            config=report_synthesis_config
-        )
-        print(f"   ✓ {report_synthesis_config.name}")
-        
-        # Writer Agent
-        writer_config = AgentConfig(
-            name="WriterAgent",
-            description="Assembles all sections into final markdown report",
-            model_name=self.model,
-            temperature=self.temperature,
-            retry_count=2
-        )
-        self.writer_agent = WriterAgent(
-            llm=self.llm,
-            tools=[],
-            config=writer_config
-        )
-        print(f"   ✓ {writer_config.name}")
-        
-        # Revision Agent
-        revision_config = AgentConfig(
-            name="RevisionAgent",
-            description="Revises report based on user feedback",
-            model_name=self.model,
-            temperature=self.temperature,
-            retry_count=2
-        )
-        self.revision_agent = RevisionAgent(
-            llm=self.llm,
-            tools=[],
-            config=revision_config
-        )
-        print(f"   ✓ {revision_config.name}\n")
-        
-        print("="*60)
-        print("✅ All Tools and Agents initialized successfully!")
-        print("="*60 + "\n")
-    
-    def get_agents(self) -> Dict[str, Any]:
-        """초기화된 Agents 반환"""
-        return {
-            'planning_agent': self.planning_agent,
-            'data_collection_agent': self.data_collection_agent,
-            'content_analysis_agent': self.content_analysis_agent,
-            'report_synthesis_agent': self.report_synthesis_agent,
-            'writer_agent': self.writer_agent,
-            'revision_agent': self.revision_agent
+
+        # Components (lazy initialization)
+        self._agents = None
+        self._utils = None
+        self._tools = None
+
+    def _build_tools(self) -> Dict[str, Any]:
+        """Build all tools"""
+        if self._tools is not None:
+            return self._tools
+
+        self._tools = {
+            'arxiv': ArxivTool(
+                config=ToolConfig(
+                    name="ArxivTool",
+                    description="Search arXiv papers",
+                    timeout=300,
+                    retry_count=3
+                )
+            ),
+            'rag': RAGTool(
+                config=ToolConfig(
+                    name="RAGTool",
+                    description="Retrieve from reference documents",
+                    timeout=3000,
+                    retry_count=2
+                ),
+                settings=self.settings
+            ),
+            'news': NewsCrawlerTool(
+                config=ToolConfig(
+                    name="NewsCrawlerTool",
+                    description="Crawl news articles",
+                    timeout=180,
+                    retry_count=3
+                )
+            ),
+            'revision': RevisionTool(),
+            'recollection': RecollectionTool()
         }
-    
-    def create_workflow(self) -> StateGraph:
+
+        return self._tools
+
+    def _build_utils(self) -> Dict[str, Any]:
+        """Build all utilities"""
+        if self._utils is not None:
+            return self._utils
+
+        # Planning utils
+        planning_util = PlanningUtil(llm=self.llm)
+        refinement_util = ResearchPlanningUtil(llm=self.llm)
+
+        self._utils = {
+            'planning': planning_util,
+            'refinement': refinement_util,
+            'refine_plan': RefinePlanUtil(refinement_tool=refinement_util),
+            'feedback_classifier': FeedbackClassifierUtil(llm=self.llm),
+            'rag_wrapper': RAGUtilWrapper(rag_tool=self._build_tools()['rag']),
+            'news_wrapper': NewsCrawlerUtilWrapper(news_tool=self._build_tools()['news'])
+        }
+
+        return self._utils
+
+    def _build_agents(self) -> Dict[str, Any]:
+        """Build all agents and LLMs"""
+        if self._agents is not None:
+            return self._agents
+
+        tools = self._build_tools()
+        utils = self._build_utils()
+
+        # Base config factory
+        def create_config(name: str, description: str) -> AgentConfig:
+            return AgentConfig(
+                name=name,
+                description=description,
+                model_name=self.model,
+                temperature=self.temperature,
+                retry_count=3
+            )
+
+        self._agents = {
+            'planning': PlanningAgent(
+                llm=self.llm,
+                tools=[utils['planning'], utils['refinement']],
+                config=create_config("PlanningAgent", "Planning and data collection strategy")
+            ),
+            'data_collection': DataCollectionAgent(
+                llm=self.llm,
+                tools=[utils['rag_wrapper'], utils['news_wrapper']],
+                raw_tools=[tools['arxiv'], tools['rag'], tools['news']],
+                config=create_config("DataCollectionAgent", "Data collection with quality check"),
+                settings=self.settings
+            ),
+            'content_analysis': ContentAnalysisLLM(
+                llm=self.llm,
+                tools=[tools['rag']],
+                config=create_config("ContentAnalysisLLM", "Content analysis and section generation")
+            ),
+            'report_synthesis': ReportSynthesisLLM(
+                llm=self.llm,
+                tools=[],
+                config=create_config("ReportSynthesisLLM", "Summary and conclusion generation")
+            ),
+            'writer': WriterAgent(
+                llm=self.llm,
+                tools=[tools['revision'], tools['recollection']],
+                config=create_config("WriterAgent", "Report assembly and review")
+            ),
+            'revision': RevisionLLM(
+                llm=self.llm,
+                tools=[],
+                config=create_config("RevisionLLM", "Report revision")
+            )
+        }
+
+        return self._agents
+
+    def build(self) -> StateGraph:
         """
-        LangGraph 워크플로우 생성
-        
+        Build and compile the workflow
+
         Returns:
-            컴파일된 StateGraph
+            Compiled StateGraph
         """
-        # StateGraph 초기화
+        agents = self._build_agents()
+        utils = self._build_utils()
+
+        # Create workflow
         workflow = StateGraph(PipelineState)
-        
-        # ========================================
-        # 노드 추가 (bind_nodes 사용)
-        # ========================================
-        
-        # Agents를 nodes에 주입
-        agents = self.get_agents()
-        
-        # bind_nodes()로 모든 노드 바인딩
-        bound_nodes = bind_nodes(
-            planning_agent=agents["planning_agent"],
-            data_collection_agent=agents["data_collection_agent"],
-            content_analysis_agent=agents["content_analysis_agent"],
-            report_synthesis_agent=agents["report_synthesis_agent"],
-            writer_agent=agents["writer_agent"],
-            revision_agent=agents["revision_agent"],
-            refine_plan_tool=self.refine_plan_tool,
-            feedback_classifier_tool=self.feedback_classifier_tool
+
+        # Bind nodes
+        nodes = bind_nodes(
+            planning_agent=agents['planning'],
+            data_collection_agent=agents['data_collection'],
+            content_analysis_agent=agents['content_analysis'],
+            report_synthesis_agent=agents['report_synthesis'],
+            writer_agent=agents['writer'],
+            revision_agent=agents['revision'],
+            refine_plan_tool=utils['refine_plan'],
+            feedback_classifier_tool=utils['feedback_classifier']
         )
-        
-        # 노드 추가
-        workflow.add_node("planning", bound_nodes["planning"])
-        workflow.add_node("data_collection", bound_nodes["data_collection"])
-        workflow.add_node("content_analysis", bound_nodes["content_analysis"])
-        workflow.add_node("report_synthesis", bound_nodes["report_synthesis"])
-        workflow.add_node("writer", bound_nodes["writer"])
-        workflow.add_node("revision", bound_nodes["revision"])
-        workflow.add_node("end", bound_nodes["end"])
-        
-        # ========================================
-        # 엣지 추가
-        # ========================================
-        
-        # Import routing functions
-        from src.graph.edges import route_after_writer, route_after_revision
-        
-        # START -> planning (planning 내부에서 human review 처리)
+
+        # Add nodes
+        for node_name, node_func in nodes.items():
+            workflow.add_node(node_name, node_func)
+
+        # Add edges
         workflow.add_edge(START, "planning")
-        
-        # planning -> data_collection (human review 통과 후)
         workflow.add_edge("planning", "data_collection")
-        
-        # data_collection -> content_analysis
         workflow.add_edge("data_collection", "content_analysis")
-        
-        # content_analysis -> report_synthesis
         workflow.add_edge("content_analysis", "report_synthesis")
-        
-        # report_synthesis -> writer
         workflow.add_edge("report_synthesis", "writer")
-        
-        # writer -> conditional routing (WriterAgent 내부에서 human review 처리)
+
+        # Conditional edges
         workflow.add_conditional_edges(
             "writer",
             route_after_writer,
             {
-                "end": "end",  # Accept
-                "revision": "revision",  # Minor revision
-                "data_collection": "data_collection"  # Data recollection (restart)
+                "end": "end",
+                "writer": "writer",  # REVISION_COMPLETE -> loop back to writer
+                "data_collection": "data_collection"  # NEEDS_RECOLLECTION -> back to data collection
             }
         )
-        
-        # revision -> writer (재조립 및 재검토)
-        workflow.add_conditional_edges(
-            "revision",
-            route_after_revision,
-            {
-                "writer": "writer"
-            }
-        )
-        
-        # end -> END
+
         workflow.add_edge("end", END)
-        
-        # ========================================
-        # 컴파일
-        # ========================================
-        
-        compiled_workflow = workflow.compile()
-        
-        return compiled_workflow
-    
+
+        return workflow.compile()
+
+
+class WorkflowManager:
+    """
+    Workflow Manager (Facade Pattern)
+
+    간단한 인터페이스로 workflow 실행 관리
+    """
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: str = "gpt-4o",
+        temperature: float = 0.0
+    ):
+        """Initialize WorkflowManager"""
+        self.builder = WorkflowBuilder(api_key, model, temperature)
+        self._workflow = None
+
+    def create_workflow(self) -> StateGraph:
+        """Get or create workflow"""
+        if self._workflow is None:
+            self._workflow = self.builder.build()
+        return self._workflow
+
     async def run_workflow(
         self,
         user_input: str,
         config: Optional[dict] = None
     ) -> PipelineState:
         """
-        워크플로우 실행
-        
+        Run the workflow
+
         Args:
-            user_input: 사용자 입력 주제
-            config: 추가 설정 (optional)
-        
+            user_input: User research topic
+            config: Additional config
+
         Returns:
-            최종 state
+            Final pipeline state
         """
         print(f"\n{'='*60}")
-        print(f"🚀 Starting AI-Robotics Report Generator Workflow")
+        print(f"🚀 AI-Robotics Report Generator")
         print(f"{'='*60}\n")
         print(f"Topic: {user_input}")
-        print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        
-        # 1. 초기 state 생성
+        print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+        # Create initial state
         initial_state = create_initial_state(user_input)
-        
-        # 2. 워크플로우 생성
+
+        # Get workflow
         workflow = self.create_workflow()
-        
-        # 3. 워크플로우 실행
+
+        # Run
         try:
             final_state = await workflow.ainvoke(initial_state, config=config)
-            
+
             print(f"\n{'='*60}")
-            print(f"✅ Workflow completed successfully!")
+            print(f"✅ Workflow Completed!")
             print(f"{'='*60}\n")
-            print(f"Final Status: {final_state.get('status')}")
-            print(f"Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            
+            print(f"Status: {final_state.get('status')}")
+            print(f"Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
             return final_state
-        
+
         except Exception as e:
             print(f"\n{'='*60}")
-            print(f"❌ Workflow failed!")
+            print(f"❌ Workflow Failed!")
             print(f"{'='*60}\n")
             print(f"Error: {str(e)}\n")
             raise
-    
-    def visualize_workflow(self, output_path: str = "workflow_graph.png") -> str:
+
+    def visualize_workflow(self) -> str:
         """
-        워크플로우 그래프 시각화
-        
-        Args:
-            output_path: 저장할 이미지 파일 경로
-        
+        Visualize workflow as Mermaid diagram
+
         Returns:
-            Mermaid 다이어그램 코드
+            Mermaid code
         """
         try:
             workflow = self.create_workflow()
-            
-            # Mermaid 다이어그램 생성
             mermaid_code = workflow.get_graph().draw_mermaid()
-            
+
             print(f"\nWorkflow Graph (Mermaid):")
             print("="*60)
             print(mermaid_code)
             print("="*60)
-            
+
             return mermaid_code
-        
+
         except Exception as e:
-            print(f"❌ Failed to visualize workflow: {e}")
+            print(f"❌ Visualization failed: {e}")
             return None
 
 
 # ========================================
-# 편의 함수들
+# Convenience Functions
 # ========================================
 
 def create_workflow_manager(
@@ -448,21 +353,17 @@ def create_workflow_manager(
     temperature: float = 0.0
 ) -> WorkflowManager:
     """
-    WorkflowManager 생성 (편의 함수)
-    
+    Create WorkflowManager
+
     Args:
         api_key: OpenAI API Key
-        model: LLM 모델
+        model: LLM model
         temperature: Temperature
-    
+
     Returns:
-        초기화된 WorkflowManager
+        WorkflowManager instance
     """
-    return WorkflowManager(
-        api_key=api_key,
-        model=model,
-        temperature=temperature
-    )
+    return WorkflowManager(api_key, model, temperature)
 
 
 async def run_report_generation(
@@ -473,71 +374,17 @@ async def run_report_generation(
     config: Optional[dict] = None
 ) -> PipelineState:
     """
-    전체 보고서 생성 파이프라인 실행 (편의 함수)
-    
+    Run report generation pipeline
+
     Args:
-        user_input: 사용자 주제
+        user_input: Research topic
         api_key: OpenAI API Key
-        model: LLM 모델
+        model: LLM model
         temperature: Temperature
-        config: 추가 설정
-    
+        config: Additional config
+
     Returns:
-        최종 state
+        Final state
     """
-    manager = create_workflow_manager(
-        api_key=api_key,
-        model=model,
-        temperature=temperature
-    )
-    
+    manager = create_workflow_manager(api_key, model, temperature)
     return await manager.run_workflow(user_input, config=config)
-
-
-# ========================================
-# Main Execution
-# ========================================
-
-if __name__ == "__main__":
-    import argparse
-    import sys
-    import platform
-    
-    # Windows에서 asyncio 정책 설정
-    if platform.system() == 'Windows':
-        # ProactorEventLoop 사용 (Windows 기본값, Python 3.8+)
-        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--run", action="store_true", help="Run the workflow now")
-    parser.add_argument("--topic", type=str, default="humanoid robots in manufacturing")
-    parser.add_argument("--visualize", action="store_true", help="Visualize workflow graph")
-    args = parser.parse_args()
-
-    if args.visualize:
-        # 워크플로우 시각화
-        manager = create_workflow_manager()
-        manager.visualize_workflow()
-    elif args.run:
-        # 워크플로우 실행
-        manager = create_workflow_manager()
-        
-        # asyncio.run() 사용 (Python 3.7+ 권장 방식)
-        try:
-            final_state = asyncio.run(manager.run_workflow(args.topic))
-            
-            print(f"\n📊 Results Summary:")
-            print(f"   Keywords: {len(final_state.get('keywords', []))} keywords")
-            print(f"   Trends: {len(final_state.get('trends', []))} trends")
-            print(f"   Sections: {len(final_state.get('section_contents', {}))} sections")
-            print(f"   Citations: {len(final_state.get('citations', []))} citations")
-            print(f"   Status: {final_state.get('status')}")
-        except Exception as e:
-            print(f"\n❌ Error: {e}")
-            import traceback
-            traceback.print_exc()
-            sys.exit(1)
-    else:
-        print("Usage:")
-        print("  python -m src.graph.workflow --run --topic 'your topic'")
-        print("  python -m src.graph.workflow --visualize")
