@@ -1,8 +1,8 @@
 """
-Report Synthesis Agent
+Report Synthesis Agent (English Only Version)
 
-Content Analysis Agent의 출력(섹션 2,3,4,5)을 받아서
-Summary, Introduction, Conclusion, References, Appendix를 생성하는 Agent
+Receives outputs (Section 2,3,4,5) from Content Analysis Agent
+and generates Summary, Introduction, Conclusion, References, and Appendix in ENGLISH.
 """
 
 from typing import List, Any, Dict
@@ -14,31 +14,20 @@ from src.agents.base.base_agent import BaseAgent
 from src.agents.base.agent_config import AgentConfig
 from src.graph.state import PipelineState
 from src.core.models.citation_model import CitationEntry
-from config.prompts.synthesis_prompts import SYNTHESIS_PROMPTS
 
 
 class ReportSynthesisLLM(BaseAgent):
     """
     Report Synthesis Agent
     
-    ContentAnalysisAgent의 출력을 받아서 나머지 섹션들을 생성:
+    Generates the remaining sections based on ContentAnalysisAgent's output:
     - SUMMARY (Executive Summary)
     - Section 1: Introduction
     - Section 6: Conclusion
     - REFERENCE (Citations)
-    - APPENDIX (추가 자료)
+    - APPENDIX
     
-    Input (from ContentAnalysisAgent):
-    - sections: Dict[str, str] (section_2_1, section_2_2, ..., section_5_3)
-    - trends: List[TrendTier]
-    - citations: List[CitationEntry]
-    
-    Output:
-    - summary: str
-    - section_1: str (Introduction)
-    - section_6: str (Conclusion)
-    - references: str (formatted citations)
-    - appendix: str
+    CRITICAL: All outputs are generated strictly in English.
     """
     
     def __init__(
@@ -51,63 +40,70 @@ class ReportSynthesisLLM(BaseAgent):
         self._setup_chains()
     
     def _setup_chains(self):
-        """LCEL Chains 설정"""
+        """LCEL Chains Setup with English Prompts"""
         str_parser = StrOutputParser()
         
-        # Summary Chain
+        # ---------------------------------------------------------------------
+        # 1. Summary Chain (English)
+        # ---------------------------------------------------------------------
         summary_prompt = ChatPromptTemplate.from_template(
-            """당신은 AI/로보틱스 전문 보고서 작가입니다.
+            """You are an expert technical report writer specializing in AI and Robotics.
 
-다음 분석 결과를 바탕으로 **Executive Summary**를 작성하세요:
+Your task is to write an **Executive Summary** based on the following analysis:
 
-**기술 트렌드 분석 (Section 2):**
+**Technology Trends (Section 2):**
 {section_2}
 
-**시장 동향 및 산업 적용 (Section 3):**
+**Market Trends & Applications (Section 3):**
 {section_3}
 
-**5년 기술 전망 (Section 4):**
+**5-Year Forecast (Section 4):**
 {section_4}
 
-**비즈니스 시사점 (Section 5):**
+**Business Implications (Section 5):**
 {section_5}
 
-**핵심 트렌드:**
+**Key Trends:**
 {key_trends}
 
-**Executive Summary 작성 요구사항:**
+**CRITICAL RULE:**
+- **WRITE ONLY IN ENGLISH.**
+- Do NOT use any other language.
 
-1. **길이**: 200-300단어
-2. **구조**:
-   - **요약문 (Overview)**: 보고서의 핵심 내용을 2-3문장으로 압축
-   - **5년 전망 (5-Year Forecast)**: 2025-2030년 주요 기술 발전 전망 (HOT_TRENDS와 RISING_STARS 포함)
+**Executive Summary Requirements:**
 
-3. **톤**: 간결하고 임팩트 있게, 경영진 대상
-4. **특징**: 데이터 기반, 구체적 인사이트
+1. **Length**: 200-300 words
+2. **Structure**:
+   - **Overview**: Compress the core message of the report into 2-3 sentences.
+   - **5-Year Forecast**: Summarize major technological shifts for 2025-2030 (mention HOT_TRENDS and RISING_STARS).
 
-**주의**:
-- "주요 발견사항", "권장사항" 등은 포함하지 마세요
-- 요약문과 5년 전망만 포함하세요
-- 각 파트는 명확히 구분되어야 합니다
+3. **Tone**: Concise, impactful, C-level executive targeting.
+4. **Style**: Data-driven, specific insights.
 
-Executive Summary만 작성하여 반환하세요 (마크다운 형식)."""
+**Constraints**:
+- Do not include headers like "Key Findings" or "Recommendations" in the summary.
+- Distinctly separate 'Overview' and '5-Year Forecast'.
+
+Return ONLY the Executive Summary in Markdown format."""
         )
         self.summary_chain = summary_prompt | self.llm | str_parser
         
-        # Introduction Chain
+        # ---------------------------------------------------------------------
+        # 2. Introduction Chain (English)
+        # ---------------------------------------------------------------------
         intro_prompt = ChatPromptTemplate.from_template(
-            """당신은 AI/로보틱스 전문 보고서 작가입니다.
+            """You are an expert technical report writer specializing in AI and Robotics.
 
-보고서 주제: {topic}
+Report Topic: {topic}
 
-다음 정보를 바탕으로 **1. Introduction**을 작성하세요:
+Based on the following information, write **1. Introduction**:
 
-**수집된 데이터:**
-- ArXiv 논문: {arxiv_count}편
-- 전문 보고서 (RAG): {rag_count}건
-- 뉴스 기사: {news_count}건
+**Data Collected:**
+- ArXiv Papers: {arxiv_count}
+- Expert Reports (RAG): {rag_count}
+- News Articles: {news_count}
 
-**보고서 구조:**
+**Report Structure:**
 - Section 1: Introduction
 - Section 2: AI-Robotics Technology Trend Analysis
 - Section 3: Market Trends & Applications
@@ -115,91 +111,95 @@ Executive Summary만 작성하여 반환하세요 (마크다운 형식)."""
 - Section 5: Implications for Business
 - Section 6: Conclusion
 
-**Introduction 작성 요구사항:**
+**CRITICAL RULE:**
+- **WRITE ONLY IN ENGLISH.**
+- Do NOT use any other language.
 
-1. **### 배경 (Background)**:
-   - AI/로보틱스 산업의 현황과 중요성
-   - 본 보고서의 필요성
+**Introduction Requirements:**
 
-2. **### 목적 (Purpose)**:
-   - 보고서의 목적과 범위
-   - 대상 독자
+1. **### Background**:
+   - Current status and importance of the AI/Robotics industry regarding the topic.
+   - The necessity of this report.
 
-3. **### 방법론 (Methodology)**:
-   - 데이터 수집 방법 (ArXiv, 전문 보고서, 뉴스)
-   - 분석 접근법 (트렌드 분류, 5년 전망)
+2. **### Purpose**:
+   - Objectives and scope of the report.
+   - Target audience (Executives, R&D, Investors).
 
-4. **### 구조 (Structure)**:
-   - 각 섹션의 간략한 설명
+3. **### Methodology**:
+   - Briefly mention data sources (ArXiv, Reports, News).
+   - Analysis approach (Trend classification, 5-year forecasting).
 
-**중요**: 각 파트(배경, 목적, 방법론, 구조) 앞에 `###` 마크다운 헤더를 반드시 사용하세요.
-길이: 500-700단어
-톤: 전문적이고 객관적
+4. **### Structure**:
+   - Brief overview of what each section covers.
 
-Introduction만 작성하여 반환하세요 (마크다운 형식, "## 1. Introduction" 제목 포함)."""
+**Format**: Use `###` Markdown headers for each subsection.
+**Length**: 400-600 words.
+**Tone**: Professional and objective.
+
+Return ONLY the Introduction in Markdown format (start with "## 1. Introduction")."""
         )
         self.intro_chain = intro_prompt | self.llm | str_parser
         
-        # Conclusion Chain
+        # ---------------------------------------------------------------------
+        # 3. Conclusion Chain (English)
+        # ---------------------------------------------------------------------
         conclusion_prompt = ChatPromptTemplate.from_template(
-            """당신은 AI/로보틱스 전문 보고서 작가입니다.
+            """You are an expert technical report writer specializing in AI and Robotics.
 
-다음 분석 결과를 바탕으로 **6. Conclusion**을 작성하세요:
+Based on the following analysis, write **6. Conclusion**:
 
-**기술 트렌드 분석:**
+**Technology Trends:**
 {section_2}
 
-**시장 동향:**
+**Market Trends:**
 {section_3}
 
-**5년 기술 전망:**
+**5-Year Forecast:**
 {section_4}
 
-**비즈니스 시사점:**
+**Business Implications:**
 {section_5}
 
-**핵심 트렌드:**
+**Key Trends:**
 {key_trends}
 
-**Conclusion 작성 요구사항:**
+**CRITICAL RULE:**
+- **WRITE ONLY IN ENGLISH.**
+- Do NOT use any other language.
 
-1. **핵심 발견사항 (Key Findings)**:
-   - 3-5개의 핵심 발견사항
-   - 데이터 기반의 구체적인 결론
+**Conclusion Requirements:**
 
-2. **미래 전망 (Future Outlook)**:
-   - 2025-2027: HOT_TRENDS의 주류화
-   - 2028-2030: RISING_STARS의 게임체인저
-   - 기술 발전 방향
+1. **Key Findings**:
+   - 3-5 major takeaways.
+   - Specific, data-backed conclusions.
 
-3. **권고사항 (Recommendations)**:
-   - 기업/투자자를 위한 권고
-   - 연구자/개발자를 위한 권고
-   - 정책입안자를 위한 권고
+2. **Future Outlook**:
+   - 2025-2027: Mainstreaming of HOT_TRENDS.
+   - 2028-2030: Game-changing potential of RISING_STARS.
+   - Direction of technological evolution.
 
-4. **맺음말 (Closing Remarks)**:
-   - 보고서의 의의
-   - 지속적인 모니터링 필요성
+3. **Recommendations**:
+   - For Companies/Investors.
+   - For Researchers/Developers.
+   - For Policymakers.
 
-길이: 600-800단어
-톤: 통찰력 있고 실행 가능한
+4. **Closing Remarks**:
+   - Significance of the report.
+   - Need for continuous monitoring.
 
-Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusion" 제목 포함)."""
+**Length**: 600-800 words.
+**Tone**: Insightful and actionable.
+
+Return ONLY the Conclusion in Markdown format (start with "## 6. Conclusion")."""
         )
         self.conclusion_chain = conclusion_prompt | self.llm | str_parser
     
     async def execute(self, state: PipelineState) -> PipelineState:
         """
-        Report Synthesis 실행
-        
-        Args:
-            state: PipelineState (ContentAnalysisAgent 출력 포함)
-        
-        Returns:
-            Updated PipelineState with synthesis results
+        Execute Report Synthesis
         """
         print(f"\n{'='*60}")
-        print(f"🎨 Report Synthesis Agent")
+        print(f"🎨 Report Synthesis Agent (English Only)")
         print(f"{'='*60}\n")
         
         # Get input from ContentAnalysisAgent
@@ -227,7 +227,7 @@ Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusi
         
         try:
             # Generate sections concurrently
-            print("📝 Generating Summary, Introduction, Conclusion...\n")
+            print("📝 Generating Summary, Introduction, Conclusion (in English)...\n")
             
             # Summary
             print("   🔹 Generating Executive Summary...")
@@ -293,16 +293,7 @@ Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusi
             raise
     
     def _combine_subsections(self, sections: Dict[str, str], section_prefix: str) -> str:
-        """
-        서브섹션들을 하나로 결합
-        
-        Args:
-            sections: All sections dict
-            section_prefix: e.g., "section_2"
-        
-        Returns:
-            Combined section text
-        """
+        """Combine subsections"""
         combined = []
         for key, value in sorted(sections.items()):
             if key.startswith(section_prefix):
@@ -311,15 +302,7 @@ Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusi
         return "\n\n".join(combined) if combined else "N/A"
     
     def _format_trends(self, trends: List[Any]) -> str:
-        """
-        트렌드를 포맷팅
-        
-        Args:
-            trends: List of TrendTier objects
-        
-        Returns:
-            Formatted trends text
-        """
+        """Format trends for the prompt"""
         if not trends:
             return "No trends classified yet."
         
@@ -329,14 +312,14 @@ Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusi
         result = []
         
         if hot_trends:
-            result.append("**HOT_TRENDS (1-2년 주류화):**")
+            result.append("**HOT_TRENDS (Mainstream in 1-2 years):**")
             for trend in hot_trends[:5]:
                 tech = getattr(trend, 'technology', 'Unknown')
                 papers = getattr(trend, 'paper_count', 0)
                 result.append(f"- {tech} ({papers} papers)")
         
         if rising_stars:
-            result.append("\n**RISING_STARS (3-5년 게임체인저):**")
+            result.append("\n**RISING_STARS (Game Changers in 3-5 years):**")
             for trend in rising_stars[:5]:
                 tech = getattr(trend, 'technology', 'Unknown')
                 papers = getattr(trend, 'paper_count', 0)
@@ -345,15 +328,7 @@ Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusi
         return "\n".join(result)
     
     def _generate_references(self, citations: List[CitationEntry]) -> str:
-        """
-        인용 목록을 포맷팅
-        
-        Args:
-            citations: List of CitationEntry objects
-        
-        Returns:
-            Formatted references markdown
-        """
+        """Generate formatted references section"""
         if not citations:
             return "## REFERENCE\n\nNo citations available."
         
@@ -388,18 +363,7 @@ Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusi
         rag_count: int,
         news_count: int
     ) -> str:
-        """
-        부록 생성
-        
-        Args:
-            trends: Trend tiers
-            arxiv_count: ArXiv paper count
-            rag_count: RAG document count
-            news_count: News article count
-        
-        Returns:
-            Formatted appendix markdown
-        """
+        """Generate Appendix section"""
         result = ["## APPENDIX\n"]
         
         # A. Data Collection Summary
@@ -440,5 +404,3 @@ Conclusion만 작성하여 반환하세요 (마크다운 형식, "## 6. Conclusi
         result.append("   - **Automated Report Generation:** All sections, including summaries and conclusions, are synthesized by specialized agents, then assembled and translated into the final report.\n")
         
         return "\n".join(result)
-
-

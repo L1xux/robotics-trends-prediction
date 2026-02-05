@@ -30,13 +30,7 @@ class RAGTool(BaseTool):
     - Similarity search: 의미적 유사도만 (dense only)
     - MMR search: 의미적 유사도 + 다양성 (dense + diversity)
     - Hybrid search: 의미적 + 키워드 매칭 (dense + sparse)
-    - Hybrid MMR search: BM25 + Cosine + MMR (ALL, 최강 조합! 권장)
-
-    Search Types:
-    - "similarity": 벡터 유사도만 (빠름, 관련성 우선)
-    - "mmr": 벡터 유사도 + MMR 다양성 (중복 최소화)
-    - "hybrid": 벡터 + BM25 키워드 (균형잡힌 검색)
-    - "hybrid_mmr": 벡터 + BM25 + MMR (관련성 + 키워드 + 다양성, 권장!)
+    - Hybrid MMR search: BM25 + Cosine + MMR
     """
 
     def __init__(self, config: ToolConfig, settings: Optional[Settings] = None):

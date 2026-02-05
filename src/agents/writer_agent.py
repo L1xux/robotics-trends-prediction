@@ -1,13 +1,14 @@
 """
-Writer Agent (ReAct-based)
+Writer Agent (ReAct-based) - English Only Version
 
-모든 섹션들을 하나의 완성된 마크다운 보고서로 조립하고,
-사용자 피드백을 받아 Agent가 자율적으로 Tool을 선택하여 처리
+Assembles all sections into a complete Markdown report and handles user feedback 
+using an Agent that autonomously selects tools (Revision/Recollection).
 """
 
 from typing import List, Any, Dict, Optional
 from datetime import datetime
 from enum import Enum
+import textwrap 
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
@@ -82,13 +83,25 @@ class WriterAgent(BaseAgent):
 
     def _create_react_agent(self):
         """
-        ReAct Agent 생성
-
-        Agent가 자율적으로 tool을 선택하여 작업 수행
+        Create ReAct Agent with EXPLICIT NEWLINES to prevent formatting issues.
         """
-        # langchain-hub 의존성을 제거하고, 표준 ReAct 프롬프트를 직접 정의합니다.
-        # 이 프롬프트는 'hwchase17/react-chat'에서 사용하는 것과 동일한 구조입니다.
-        template = """Assistant is a large language model trained by Google.
+        # [Fix] Explicitly define format instructions to ensure correct line breaks
+        format_instructions = (
+            "To use a tool, please use the following format:\n\n"
+            "```\n"
+            "Thought: Do I need to use a tool? Yes\n"
+            "Action: the tool to use, should be one of [{tool_names}]\n"
+            "Action Input: the input to the tool\n"
+            "Observation: the result of the tool\n"
+            "```\n\n"
+            "When you have a response to say to the human, or if you do not need to use a tool, you MUST use the format:\n\n"
+            "```\n"
+            "Thought: Do I need to use a tool? No\n"
+            "Final Answer: [your response here]\n"
+            "```"
+        )
+
+        template = f"""Assistant is a large language model trained by Google.
 
 Assistant is designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. As a language model, Assistant is able to generate human-like text in response to a wide range of prompts and questions, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
 
@@ -97,28 +110,14 @@ Assistant is constantly learning and improving, and its capabilities are constan
 TOOLS:
 ------
 Assistant has access to the following tools:
-{tools}
+{{tools}}
 
-To use a tool, please use the following format:
-
-```
-Thought: Do I need to use a tool? Yes
-Action: the tool to use, should be one of [{tool_names}]
-Action Input: the input to the tool
-Observation: the result of the tool
-```
-
-When you have a response to say to the human, or if you do not need to use a tool, you MUST use the format:
-
-```
-Thought: Do I need to use a tool? No
-Final Answer: [your response here]
-```
+{format_instructions}
 
 Begin!
 
-New input: {input}
-{agent_scratchpad}"""
+New input: {{input}}
+{{agent_scratchpad}}"""
 
         react_prompt = PromptTemplate.from_template(template)
 
@@ -130,41 +129,34 @@ New input: {input}
 
     async def execute(self, state: PipelineState) -> PipelineState:
         """
-        최종 보고서 작성 및 사용자 피드백 처리
-
-        Agent가 자율적으로 Tool을 선택하여 처리
+        Assemble final report and handle user feedback (English Only)
         """
         print(f"\n{'='*60}")
-        print(f"✍️  Writer Agent (ReAct)")
+        print(f"✍️  Writer Agent (ReAct - English Only)")
         print(f"{'='*60}\n")
 
         try:
-            # Step 1: 영문 보고서 조립 (또는 기존 보고서 사용)
+            # Step 1: Assemble English Report (or use existing)
             if state.get("revision_count", 0) > 0 and state.get("final_report"):
                 final_report = state["final_report"]
-                print("\n📝 Using previously revised English report for re-review.")
+                print("\n📝 Using previously revised report for re-review.")
             else:
                 final_report = self._assemble_report(state)
                 state["final_report"] = final_report
                 state["report_generated_at"] = datetime.now().isoformat()
 
-            # Step 2: 한국어로 번역 (CLI 리뷰용)
-            print("\n🌐 Translating report to Korean for user review...")
-            korean_report_for_review = await self._translate_to_korean(final_report)
-            print("✅ Translation for review complete.\n")
-
-            # Step 3: 사용자에게 한국어 보고서 표시
+            # Step 2: Show English Report to User
             print("\n" + "="*60)
-            print("📄 Final Report Draft (Korean)")
+            print("📄 Final Report Draft")
             print("="*60 + "\n")
 
-            print(korean_report_for_review)
+            print(final_report)
 
             print("\n" + "="*60)
             print("👤 Please review the full report above")
             print("="*60 + "\n")
 
-            # Step 4: 사용자 피드백 받기
+            # Step 3: Get User Feedback
             print("💬 Your feedback:")
             print("   - Type 'ok', 'accept', 'good', 'approve' to accept the report")
             print("   - Or provide specific feedback for improvements")
@@ -172,30 +164,29 @@ New input: {input}
 
             feedback = input("Your feedback: ").strip()
 
-            # 빈 피드백 - 승인으로 간주
+            # Empty feedback -> Treat as acceptance
             if not feedback:
                 print("\n⚠️  No feedback provided. Treating as acceptance.")
                 state["status"] = WorkflowStatus.COMPLETED.value
                 state["review_feedback"] = None
                 return state
 
-            # LLM을 사용해 피드백 감정 평가
+            # Evaluate Sentiment
             print(f"\n🤖 Evaluating feedback sentiment...\n")
 
             sentiment = await self._evaluate_feedback_sentiment(feedback)
 
             if sentiment == FeedbackSentiment.POSITIVE.value:
-                # 사용자 만족 - 보고서 승인
+                # User satisfied -> Accept Report
                 print("\n✅ Feedback indicates satisfaction - Report accepted!")
                 state["status"] = WorkflowStatus.COMPLETED.value
                 state["review_feedback"] = None
                 return state
 
-            # 부정적 피드백 - ReAct Agent에게 처리 위임
+            # Negative Feedback -> Delegate to ReAct Agent
             print(f"\n📝 Received feedback: {feedback[:150]}...")
             print(f"🤖 ReAct Agent will analyze and choose tool...\n")
 
-            # Agent Executor 실행 - Agent가 도구 선택
             if self._agent_executor:
                 agent_input = f"""Analyze the following user feedback and decide which tool to use.
 
@@ -207,25 +198,22 @@ Choose the appropriate tool:
 
 Provide a brief reason for your choice."""
 
-                # Agent 실행 - Tool 자동 호출
+                # Run Agent -> Select Tool
                 result = await self._agent_executor.ainvoke({"input": agent_input})
 
-                # Agent가 내린 최종 결론(output)과 중간 단계(intermediate_steps)를 가져옴
                 output = result.get("output", "No output from agent.")
                 intermediate_steps = result.get("intermediate_steps", [])
 
                 print(f"\n🤖 Agent Decision: {output}\n")
 
-                # 중간 단계에서 어떤 Tool이 사용되었는지 직접 확인하여 분기 (가장 안정적인 방법)
+                # Check which tool was actually used
                 action_taken = None
                 if intermediate_steps:
-                    # 마지막으로 실행된 AgentAction을 가져옵니다.
-                    # intermediate_steps는 [(AgentAction, tool_output), ...] 형태의 리스트입니다.
                     last_step = intermediate_steps[-1]
                     action_taken = last_step[0]
 
                 if action_taken and action_taken.tool == "revise_report":
-                    # RevisionTool 선택됨 - 실제 revision 수행
+                    # RevisionTool Selected
                     print(f"✅ Agent chose RevisionTool - Performing revision...")
                     
                     revised_report = await self._perform_revision(final_report, feedback)
@@ -238,7 +226,7 @@ Provide a brief reason for your choice."""
                     print(f"✅ Revision complete (revision #{state['revision_count']})")
 
                 elif action_taken and action_taken.tool == "recollect_data":
-                    # RecollectionTool 선택됨 - graph가 data_collection으로 라우팅
+                    # RecollectionTool Selected
                     print(f"✅ Agent chose RecollectionTool - Routing to data_collection_agent")
 
                     state["status"] = WorkflowStatus.NEEDS_RECOLLECTION.value
@@ -247,7 +235,7 @@ Provide a brief reason for your choice."""
                     print(f"🔄 Workflow will route back to data collection")
 
                 else:
-                    # 불명확한 출력, 기본적으로 revision
+                    # Unclear or Default -> Revision
                     print(f"⚠️  Unclear agent output, defaulting to revision")
 
                     revised_report = await self._perform_revision(final_report, feedback)
@@ -257,7 +245,7 @@ Provide a brief reason for your choice."""
                     state["review_feedback"] = None
                     state["revision_count"] = state.get("revision_count", 0) + 1
             else:
-                # No agent executor, default to revision
+                # No Executor -> Default Revision
                 print(f"⚠️  No agent executor, performing revision")
 
                 revised_report = await self._perform_revision(final_report, feedback)
@@ -277,80 +265,56 @@ Provide a brief reason for your choice."""
 
     async def _perform_revision(self, current_report: str, user_feedback: str) -> str:
         """
-        실제 revision 수행 (LLM 사용)
-
-        Args:
-            current_report: 현재 영문 보고서
-            user_feedback: 사용자 피드백
-
-        Returns:
-            수정된 영문 보고서
+        Perform actual revision using LLM
         """
-        print(f"\n✏️  Revising report based on feedback...")
+        print(f"\nRevising report based on feedback...")
 
         try:
-            system_prompt = """You are an expert technical writer and editor specializing in AI-Robotics industry reports.
+            # [Fix] Indentation cleanup using textwrap to prevent whitespace issues in LLM prompt
+            system_prompt = textwrap.dedent("""\
+                You are an expert technical writer and editor specializing in AI-Robotics industry reports.
 
-Your task is to revise the WRITING STYLE, TONE, and EXPRESSIONS of an English report based on user feedback.
+                Your task is to revise the WRITING STYLE, TONE, and EXPRESSIONS of an English report based on user feedback.
 
-**CRITICAL CONSTRAINT**:
-- DO NOT add new data, companies, or technologies
-- DO NOT collect or insert new information
-- ONLY improve the writing style, tone, clarity, and structure using EXISTING content
+                **CRITICAL CONSTRAINT**:
+                - DO NOT add new data, companies, or technologies
+                - DO NOT collect or insert new information
+                - ONLY improve the writing style, tone, clarity, and structure using EXISTING content
 
-Key responsibilities:
-1. Carefully analyze the user's feedback
-2. Improve writing style and expressions
-3. Enhance clarity and readability
-4. Reorganize content if needed
-5. Maintain all factual information and citations
+                Key responsibilities:
+                1. Carefully analyze the user's feedback
+                2. Improve writing style and expressions
+                3. Enhance clarity and readability
+                4. Reorganize content if needed
+                5. Maintain all factual information and citations
 
-What you CAN change:
-- Writing style and tone
-- Sentence structure and phrasing
-- Paragraph organization
-- Clarity of explanations
-- Logical flow
-
-What you CANNOT change:
-- Add new data or facts
-- Remove or change citations
-- Add companies/technologies not in the original
-- Change technical accuracy
-
-Output requirements:
-- Return the COMPLETE revised report in markdown format
-- Keep all sections that don't need changes as-is
-- Maintain all markdown formatting
-- Keep all citation numbers [1], [2], etc. intact
-- Use ONLY the existing data and information"""
+                Output requirements:
+                - Return the COMPLETE revised report in markdown format
+                - Keep all sections that don't need changes as-is
+                - Maintain all markdown formatting
+                - Keep all citation numbers [1], [2], etc. intact
+                - Use ONLY the existing data and information""")
 
             user_prompt = f"""Revise the writing style and expressions of the following English report based on user feedback.
 
-**IMPORTANT**: DO NOT add new data. Only improve the writing using existing content.
+            **IMPORTANT**: DO NOT add new data. Only improve the writing using existing content.
 
-Current Report:
-```markdown
-{current_report[:30000]}
-```
+            Current Report:
+            ```markdown
+            {current_report[:30000]}
+            User Feedback: "{user_feedback}"
 
-User Feedback:
-"{user_feedback}"
+            Instructions:
 
-Instructions:
-1. Read the user feedback carefully
-2. Identify which aspects of WRITING need improvement
-3. Revise the writing style, tone, and expressions
-4. Return the COMPLETE revised report in markdown format
+            Read the user feedback carefully
 
-CRITICAL RULES:
-- Use ONLY existing data and information from the current report
-- DO NOT add new companies, technologies, or facts
-- DO NOT collect or insert new data
-- ONLY improve phrasing, clarity, structure, and tone
-- Keep all citation numbers [1], [2], etc. exactly as they are
+            Identify which aspects of WRITING need improvement
 
-Output the complete revised report below:"""
+            Revise the writing style, tone, and expressions
+
+            Return the COMPLETE revised report in markdown format
+
+            Output the complete revised report below:"""
 
             messages = [
                 SystemMessage(content=system_prompt),
@@ -373,7 +337,7 @@ Output the complete revised report below:"""
 
     def _assemble_report(self, state: PipelineState) -> str:
         """
-        최종 보고서 조립 (영문)
+        Assemble final report (English)
         """
         print("📝 Assembling final report...\n")
 
@@ -472,32 +436,24 @@ Output the complete revised report below:"""
 
     async def _evaluate_feedback_sentiment(self, feedback: str) -> str:
         """
-        LLM을 사용해 사용자 피드백의 감정 평가
-
-        Args:
-            feedback: User feedback text
-
-        Returns:
-            FeedbackSentiment value ("positive" or "negative")
+        Evaluate feedback sentiment using LLM
         """
         try:
             prompt = ChatPromptTemplate.from_messages([
                 ("system", f"""You are a feedback sentiment analyzer.
+    Analyze the user's feedback and determine if it indicates:
 
-Analyze the user's feedback and determine if it indicates:
-1. **{FeedbackSentiment.POSITIVE.value}** - User is satisfied and accepts the report
-   - Examples: "good", "ok", "looks great", "approve", "nice work", "좋아", "승인", "완료"
+    {FeedbackSentiment.POSITIVE.value} - User is satisfied and accepts the report
 
-2. **{FeedbackSentiment.NEGATIVE.value}** - User wants changes or is not satisfied
-   - Examples: "change this", "add more", "fix", "revise", "missing", "needs improvement"
+    Examples: "good", "ok", "looks great", "approve", "nice work", "yes"
 
-Respond with ONLY ONE WORD: "{FeedbackSentiment.POSITIVE.value}" or "{FeedbackSentiment.NEGATIVE.value}"
-"""),
-                ("user", f"""User feedback: "{{feedback}}"
+    {FeedbackSentiment.NEGATIVE.value} - User wants changes or is not satisfied
 
-Is this {FeedbackSentiment.POSITIVE.value} (accept) or {FeedbackSentiment.NEGATIVE.value} (needs changes)?
-Respond with only: {FeedbackSentiment.POSITIVE.value} or {FeedbackSentiment.NEGATIVE.value}""")
-            ])
+    Examples: "change this", "add more", "fix", "revise", "missing", "needs improvement"
+
+    Respond with ONLY ONE WORD: "{FeedbackSentiment.POSITIVE.value}" or "{FeedbackSentiment.NEGATIVE.value}" """), ("user", f"""User feedback: "{{feedback}}"
+
+    Is this {FeedbackSentiment.POSITIVE.value} (accept) or {FeedbackSentiment.NEGATIVE.value} (needs changes)? Respond with only: {FeedbackSentiment.POSITIVE.value} or {FeedbackSentiment.NEGATIVE.value}""") ])
 
             chain = prompt | self.llm
             response = await chain.ainvoke({"feedback": feedback})
@@ -513,16 +469,14 @@ Respond with only: {FeedbackSentiment.POSITIVE.value} or {FeedbackSentiment.NEGA
             elif FeedbackSentiment.NEGATIVE.value in result:
                 return FeedbackSentiment.NEGATIVE.value
             else:
-                # Default to negative (safer - allows user to provide more feedback)
                 return FeedbackSentiment.NEGATIVE.value
 
         except Exception as e:
             print(f"⚠️  Sentiment evaluation error: {e}")
-            # Default to negative (safer)
             return FeedbackSentiment.NEGATIVE.value
 
     def _generate_title(self, topic: str) -> str:
-        """보고서 제목 생성"""
+        """Generate Report Title"""
         current_date = datetime.now().strftime("%Y-%m-%d")
         return "\n".join([
             f"# {topic.title()}",
@@ -541,7 +495,7 @@ Respond with only: {FeedbackSentiment.POSITIVE.value} or {FeedbackSentiment.NEGA
         section_prefix: str,
         section_title: str
     ) -> str:
-        """서브섹션 조립"""
+        """Assemble subsections"""
         subsections = {k: v for k, v in sections.items() if k.startswith(section_prefix)}
 
         if not subsections:
@@ -557,56 +511,5 @@ Respond with only: {FeedbackSentiment.POSITIVE.value} or {FeedbackSentiment.NEGA
         return "\n".join(result)
 
     def _count_subsections(self, sections: Dict[str, str], section_prefix: str) -> int:
-        """서브섹션 개수"""
+        """Count subsections"""
         return len([k for k in sections.keys() if k.startswith(section_prefix)])
-
-    async def _translate_to_korean(self, english_report: str) -> str:
-        """
-        (CLI 리뷰용) 영문 보고서를 한국어로 번역. 에러 발생 시 재시도.
-        """
-        sections = english_report.split("\n## ")
-        translated_sections = []
-
-        max_section_retries = 3
-        for i, section in enumerate(sections):
-            if i == 0:
-                chunk = section
-            else:
-                chunk = "## " + section
-
-            if len(chunk.strip()) < 10:
-                translated_sections.append(chunk)
-                continue
-
-            for attempt in range(max_section_retries):
-                try:
-                    prompt = ChatPromptTemplate.from_messages([
-                        ("system", """You are a professional Korean translator specializing in technical and business documents.
-
-Translate the following English markdown report to Korean while:
-1. Maintaining all markdown formatting (headers, lists, bold, italic, etc.)
-2. Keeping citation numbers [1], [2], etc. as-is
-3. Preserving technical terms when appropriate (e.g., AI, IoT, robotics)
-4. Using natural, professional Korean business language
-5. Keeping the document structure exactly the same
-
-Output ONLY the translated Korean markdown, nothing else."""),
-                        ("user", "{text}")
-                    ])
-
-                    chain = prompt | self.llm
-                    response = await chain.ainvoke({"text": chunk})
-
-                    translated = response.content if hasattr(response, 'content') else str(response)
-                    translated_sections.append(translated.strip())
-                    break
-
-                except Exception as e:
-                    print(f"  ❌ Translation error for section {i+1} (Attempt {attempt + 1}/{max_section_retries}): {e}")
-                    if attempt < max_section_retries - 1:
-                        await asyncio.sleep(2)
-                    else:
-                        print(f"  ❌ All retries failed for section {i+1}. Using original English text for this section.")
-                        translated_sections.append(chunk)  # Fallback to English
-
-        return "\n\n".join(translated_sections)

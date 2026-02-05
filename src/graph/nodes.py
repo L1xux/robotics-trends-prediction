@@ -348,7 +348,6 @@ def bind_nodes(
     content_analysis_agent: BaseAgent,
     report_synthesis_agent: BaseAgent,
     writer_agent: BaseAgent,
-    revision_agent: BaseAgent,
     refine_plan_tool: Any,
     feedback_classifier_tool: Any
 ) -> Dict[str, Callable]:
@@ -364,8 +363,6 @@ def bind_nodes(
         "content_analysis": content_analysis_agent.execute,
         "report_synthesis": report_synthesis_agent.execute,
         "writer": writer_agent.execute,
-        "revision": revision_agent.execute,
-        
         # Tools -> Nodes
         "refine_plan": refine_plan_tool.run,
         "feedback_classifier": feedback_classifier_tool.run

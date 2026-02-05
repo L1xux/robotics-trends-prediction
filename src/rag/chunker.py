@@ -7,8 +7,8 @@ class SemanticChunker:
     
     def __init__(
         self,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
+        chunk_size: int = 1024,
+        chunk_overlap: int = 300,
         separators: List[str] = None
     ):
         """

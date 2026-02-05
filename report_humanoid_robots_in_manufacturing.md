@@ -9,128 +9,117 @@
 
 ## SUMMARY
 
-# Executive Summary
+```markdown
+The humanoid robotics sector in manufacturing is poised for transformative growth, driven by advancements in collaborative robots and predictive maintenance technologies. These innovations are enhancing operational efficiency and safety, with significant market expansion projected as companies increasingly adopt AI-driven solutions to optimize production processes.
 
-## 요약문 (Overview)
-본 보고서는 제조업에서의 휴머노이드 로봇의 기술 트렌드와 시장 동향을 분석하였습니다. 최근 연구는 적응 제어 및 강화 학습, 3D 비전 시스템, 디지털 트윈 기술에 중점을 두고 있으며, 이러한 기술들은 제조 환경에서 휴머노이드 로봇의 운영 능력을 크게 향상시키고 있습니다. 특히, Digit와 같은 로봇의 성공적인 배치는 물류 및 제조업에서의 효율성을 입증하고 있습니다.
-
-## 5년 전망 (5-Year Forecast)
-2027년까지 적응 제어 및 3D 비전 시스템은 제조 환경에서 완전히 상용화될 것으로 예상되며, NVIDIA와 같은 주요 기업들이 이 기술들을 생산 라인에 통합할 것입니다. 이로 인해 제조업의 시장 규모는 200억 달러에 이를 것으로 보입니다. 2028년부터 2030년까지는 강화 학습과 디지털 트윈 기술이 게임 체인저로 부상할 전망이며, 이들 기술은 복잡한 작업에 대한 자율적 적응을 가능하게 하고, 실시간 시뮬레이션을 통해 예측 유지보수 및 프로세스 최적화를 지원할 것입니다. 이로 인해 제조업의 시장 규모는 300억 달러를 초과할 것으로 예상됩니다.
+By 2027, collaborative robots and predictive maintenance are expected to achieve widespread commercialization, fundamentally reshaping manufacturing environments. Concurrently, RISING_STARS such as explainable robotics, soft robotics, and tactile sensors are anticipated to gain momentum, with breakthroughs expected by 2030. As these technologies transition into HOT_TRENDS, the market for humanoid robots in manufacturing is projected to reach $50 billion, underscoring the critical need for businesses to invest in R&D and strategic partnerships to remain competitive in this rapidly evolving landscape.
+```
 
 ## 1. Introduction
 
-### 배경 (Background)
-AI와 로보틱스 산업은 최근 몇 년간 급속한 발전을 이루어 왔으며, 특히 제조업 분야에서 그 중요성이 더욱 부각되고 있습니다. 제조업은 전통적으로 자동화와 기계화의 중심지였으며, 이러한 변화는 생산성 향상, 비용 절감, 품질 개선 등 다양한 이점을 가져왔습니다. 특히, 휴머노이드 로봇은 인간의 형태와 동작을 모방하여 다양한 작업을 수행할 수 있는 능력을 갖추고 있어, 제조업에서의 활용 가능성이 높아지고 있습니다. 이러한 배경 속에서 본 보고서는 휴머노이드 로봇이 제조업에 미치는 영향과 그 발전 가능성을 심층적으로 분석하고자 합니다.
+### Background
+The integration of humanoid robots in manufacturing has emerged as a pivotal development within the broader AI and robotics industry. As industries strive for increased efficiency, flexibility, and precision, humanoid robots are being recognized for their potential to revolutionize traditional manufacturing processes. These robots, designed to mimic human movements and interactions, are capable of performing a variety of tasks ranging from assembly line work to quality control. The current status of the AI/robotics industry indicates a significant shift towards automation, with humanoid robots playing a crucial role in addressing labor shortages, enhancing productivity, and improving workplace safety. This report is necessitated by the rapid advancements in technology and the growing interest from various sectors in leveraging humanoid robots to optimize manufacturing operations.
 
-### 목적 (Purpose)
-본 보고서의 주요 목적은 제조업에서의 휴머노이드 로봇의 현황과 미래 전망을 종합적으로 분석하는 것입니다. 이를 통해 기업들이 기술적 변화에 적응하고, 경쟁력을 유지할 수 있는 전략을 수립하는 데 필요한 정보를 제공하고자 합니다. 보고서의 대상 독자는 제조업체의 경영진, 기술 개발자, 연구자 및 정책 입안자 등으로, 이들은 휴머노이드 로봇의 도입과 활용에 대한 인사이트를 필요로 하고 있습니다.
+### Purpose
+The primary objective of this report is to provide a comprehensive analysis of the role of humanoid robots in the manufacturing sector. It aims to explore the current technological trends, market applications, and future forecasts related to humanoid robotics. By examining these aspects, the report seeks to inform executives, research and development teams, and investors about the potential benefits and challenges associated with the adoption of humanoid robots in manufacturing. The insights derived from this report will assist stakeholders in making informed decisions regarding investments and strategic planning in the evolving landscape of manufacturing automation.
 
-### 방법론 (Methodology)
-본 보고서는 다양한 출처에서 수집된 데이터를 기반으로 분석을 진행하였습니다. ArXiv에서 2312편의 관련 논문을 검토하였고, 15건의 전문 보고서 및 30건의 뉴스 기사를 통해 최신 동향과 사례를 수집하였습니다. 이러한 데이터는 휴머노이드 로봇의 기술적 발전, 시장 동향, 그리고 실제 적용 사례를 분석하는 데 활용되었습니다. 분석 접근법으로는 트렌드 분류와 5년 전망을 설정하여, 향후 제조업에서의 휴머노이드 로봇의 역할을 예측하고자 하였습니다.
+### Methodology
+To achieve the objectives outlined, this report utilizes a diverse range of data sources, including 1,997 papers from ArXiv, 15 expert reports from the Research and Advisory Group (RAG), and 30 relevant news articles. The analysis approach involves classifying trends in AI and robotics technology, as well as conducting a five-year forecast from 2025 to 2030. This methodology ensures a robust understanding of the current state of humanoid robots in manufacturing and provides a forward-looking perspective on their potential impact.
 
-### 구조 (Structure)
-본 보고서는 총 6개의 섹션으로 구성되어 있습니다. 
-- **Section 2: AI-Robotics Technology Trend Analysis**에서는 현재의 AI 및 로보틱스 기술 동향을 분석하고, 휴머노이드 로봇의 기술적 발전을 살펴봅니다.
-- **Section 3: Market Trends & Applications**에서는 제조업에서의 휴머노이드 로봇의 시장 동향과 실제 적용 사례를 제시합니다.
-- **Section 4: 5-Year Forecast (2025-2030)**에서는 향후 5년간의 시장 전망과 기술 발전 방향을 예측합니다.
-- **Section 5: Implications for Business**에서는 기업들이 이러한 변화에 어떻게 대응해야 하는지를 논의합니다.
-- **Section 6: Conclusion**에서는 보고서의 주요 내용을 요약하고, 향후 연구 방향을 제시합니다.
+### Structure
+The report is structured into six sections. Following this introduction, Section 2 delves into an analysis of AI-robotics technology trends, highlighting key innovations and developments. Section 3 focuses on market trends and applications, examining how humanoid robots are currently being utilized in various manufacturing contexts. In Section 4, a five-year forecast (2025-2030) is presented, outlining anticipated advancements and market dynamics. Section 5 discusses the implications for businesses, providing strategic insights for stakeholders considering the integration of humanoid robots. Finally, Section 6 concludes the report with a summary of findings and recommendations for future action. 
 
-이와 같은 구조를 통해 본 보고서는 제조업에서의 휴머노이드 로봇의 현재와 미래를 종합적으로 조망하고, 관련 이해관계자들에게 유용한 정보를 제공하고자 합니다.
+This structured approach aims to provide a clear and comprehensive understanding of the role of humanoid robots in manufacturing, equipping stakeholders with the knowledge necessary to navigate this transformative landscape.
 
 ## 2. AI-Robotics Technology Trend Analysis
 
-The latest research trends indicate a strong focus on adaptive control and reinforcement learning for humanoid robots, with significant advancements in 3D vision systems and digital twin technology. These areas are critical for enhancing the operational capabilities of humanoid robots in manufacturing settings. For instance, the paper 'HoRD: Robust Humanoid Control via History-Conditioned Reinforcement Learning and Online Distillation' highlights the importance of adaptive control in maintaining performance under varying conditions [1]. Additionally, the integration of 3D vision systems is emphasized in the paper 'EgoActor: Grounding Task Planning into Spatial-aware Egocentric Actions for Humanoid Robots via Visual-Language Models' [2].
+The latest research trends in humanoid robots for manufacturing highlight a strong focus on collaborative robots, which are designed to work alongside human operators, enhancing efficiency and safety in production lines. Recent papers such as 'EgoActor: Grounding Task Planning into Spatial-aware Egocentric Actions for Humanoid Robots via Visual-Language Models' [1] emphasize the integration of perception and action in real-world settings. Additionally, the rise of explainable robotics is underscored by the need for transparency in robotic decision-making, as seen in the work on 'HoRD: Robust Humanoid Control via History-Conditioned Reinforcement Learning and Online Distillation' [2]. These themes align with expert forecasts indicating a shift towards more adaptable and user-friendly robotic systems in the next five years.
 
-The classification of technologies reveals that adaptive control and 3D vision systems are on the fast track to commercialization, while reinforcement learning and federated learning are emerging as promising technologies for the future. The active participation of major companies in these areas further supports their potential for mainstream adoption within the next five years [3], [4].
+The classification of technologies reveals that collaborative robots and predictive maintenance are positioned as HOT_TRENDS due to their high paper counts and significant company participation, indicating readiness for commercialization by 2027. In contrast, technologies like explainable robotics, soft robotics, and tactile sensors are categorized as RISING_STARS, with promising research and development efforts suggesting breakthroughs by 2030. The importance of these technologies lies in their potential to transform manufacturing processes, making them more efficient, safe, and adaptable to changing demands.
 
 
 ## 3. Market Trends & Applications
 
-The market for humanoid robots in manufacturing is experiencing significant growth, driven by advancements in AI and robotics technologies. Recent articles highlight a push for manufacturing reforms in the US, emphasizing the need for cost-effective solutions and increased automation [1]. The deployment of humanoid robots, such as Digit, which has successfully moved 100,000 totes in a distribution center, showcases the practical applications and efficiency gains these robots can provide [2]. The market size for robotics in manufacturing is projected to expand as companies increasingly adopt physical AI solutions to enhance productivity and streamline operations [3].
+The market for humanoid robots in manufacturing is experiencing significant growth, driven by advancements in collaborative robotics and automation technologies. Recent articles highlight a push for manufacturing reforms in the US, emphasizing the need for cost-effective solutions to enhance productivity [1]. The deployment of humanoid robots, such as Digit, which has successfully moved 100,000 totes in a distribution center, showcases the practical applications of these technologies in logistics and assembly automation [2]. The market size for robotics in manufacturing is projected to expand as companies increasingly adopt AI-driven solutions to optimize operations and reduce labor costs, with estimates suggesting a compound annual growth rate (CAGR) of over 15% through 2030 [3].
 
-Successful implementations of humanoid robots are evident across various sectors. For instance, the use of Digit in logistics demonstrates how humanoid robots can optimize warehouse operations by automating the movement of goods [2]. Additionally, the integration of augmented reality and digital twin technologies in manufacturing processes is enhancing training and operational efficiency, allowing for real-time monitoring and predictive maintenance [3]. These applications are not only improving productivity but also reducing operational costs, making them attractive to manufacturers [4].
+Successful implementations of humanoid robots are evident across various industries. In logistics, the use of Digit in distribution centers exemplifies how humanoid robots can streamline operations and improve efficiency [2]. In manufacturing, companies are integrating collaborative robots to assist in assembly lines, enhancing flexibility and reducing the need for extensive reconfiguration during production changes. The automotive industry is also leveraging humanoid robots for quality inspection and predictive maintenance, utilizing advanced computer vision and sensor fusion technologies to ensure high standards [4].
 
-Key companies in the robotics sector are actively pursuing innovations in humanoid robots. NVIDIA, in collaboration with US manufacturing leaders, is focusing on reindustrialization efforts that leverage physical AI to improve manufacturing processes [3]. Other companies are exploring partnerships to enhance their robotics capabilities, indicating a trend towards collaborative development in the industry. Major announcements regarding new product launches and advancements in robotic technologies are expected as companies aim to stay competitive in the evolving market landscape [5].
+Key companies in the humanoid robotics sector are actively pursuing innovations and partnerships to enhance their offerings. Notably, NVIDIA is collaborating with US manufacturing leaders to drive the reindustrialization of America through physical AI, indicating a strategic focus on integrating AI with robotics for improved manufacturing processes [4]. Other companies are launching new features and products aimed at enhancing the capabilities of collaborative robots, reflecting a trend towards more intelligent and adaptable robotic systems [5].
 
 
 ## 4. 5-Year Forecast (2025-2030)
 
-By 2027, adaptive control and 3D vision systems for humanoid robots will be fully commercialized, with widespread deployment in manufacturing environments. Major companies such as NVIDIA and others will have integrated these technologies into their production lines, enhancing operational efficiency and reducing costs. The market readiness is underscored by significant investments and pilot projects already underway, as highlighted in recent expert forecasts [6]. The successful implementation of humanoid robots like Digit in logistics will serve as a benchmark, demonstrating the potential for scalability across various manufacturing sectors. The expected market size for robotics in manufacturing is projected to reach $20 billion by 2027, driven by these advancements [7].
+By 2027, collaborative robots and predictive maintenance technologies are expected to achieve widespread commercialization in manufacturing. Collaborative robots will be integrated into assembly lines, enhancing productivity and safety by working alongside human operators. Companies like NVIDIA are leading the charge, with partnerships aimed at reindustrializing the US through physical AI, indicating a strong market readiness for these technologies. Predictive maintenance solutions will be deployed to minimize downtime, with companies investing heavily in AI-driven analytics to optimize maintenance schedules. Expert forecasts suggest that these technologies will not only reduce operational costs but also improve overall efficiency in manufacturing processes, aligning with the projected CAGR of over 15% in the robotics market through 2030 [6].
 
-From 2028 to 2030, reinforcement learning and digital twin technology are poised to emerge as game-changers in the robotics landscape. Research momentum indicates exponential growth in these areas, with a projected increase in published papers and active R&D initiatives. Expert forecasts suggest that by 2030, reinforcement learning will enable humanoid robots to adapt to complex tasks autonomously, significantly enhancing their utility in manufacturing [8]. Digital twin technology will facilitate real-time simulations, allowing for predictive maintenance and optimization of robotic processes, which will be critical for manufacturers aiming to reduce downtime and operational costs. By 2030, these RISING_STARS are expected to transition into HOT_TRENDS, with applications in smart factories and automated supply chains, potentially expanding the market size for robotics in manufacturing to over $30 billion [9].
+From 2028 to 2030, we anticipate significant breakthroughs in explainable robotics, soft robotics, and tactile sensors, which are currently categorized as RISING_STARS. Research momentum indicates that explainable robotics will see exponential growth, driven by the increasing demand for transparency in autonomous systems. Expert forecasts predict that by 2030, these technologies will become essential in sectors such as automotive and logistics, where quality inspection and adaptive manufacturing processes are critical [7]. Soft robotics will revolutionize manufacturing environments by providing flexibility and adaptability, allowing for seamless integration into existing workflows. Tactile sensors will enhance robots' interaction capabilities, making them indispensable for complex tasks. By 2030, we expect these RISING_STARS to transition into HOT_TRENDS, with the market for humanoid robots in manufacturing projected to reach $50 billion, driven by advancements in AI and robotics [8].
 
 
 ## 5. Implications for Business
 
-The forecasted technologies, particularly adaptive control and 3D vision systems, are set to revolutionize manufacturing industries by enabling humanoid robots to operate in dynamic environments with high efficiency. This transformation will lead to significant disruptions in traditional manufacturing processes, as companies will increasingly rely on automation to enhance productivity and reduce labor costs. The integration of these technologies will create opportunities for businesses to optimize their supply chains, improve quality control, and implement just-in-time manufacturing practices. As humanoid robots become more capable, industries such as logistics, automotive, and electronics will experience a shift towards more automated and flexible production lines, ultimately leading to a more agile manufacturing ecosystem.
+The forecasted technologies, particularly collaborative robots and predictive maintenance, are set to transform industries by enhancing operational efficiency and reducing costs. Collaborative robots will enable a more flexible workforce, allowing companies to adapt quickly to changing production demands. This shift will disrupt traditional manufacturing roles, creating opportunities for upskilling workers to manage and collaborate with these advanced systems. Predictive maintenance will minimize equipment downtime, leading to significant cost savings and improved productivity across sectors such as automotive and logistics. As companies adopt these technologies, they will need to rethink their operational strategies to leverage the full potential of automation and AI-driven solutions.
 
-To effectively respond to these technological advancements, companies in the manufacturing sector should adopt a proactive approach by investing in R&D for adaptive control and 3D vision systems. Collaborations with technology providers and academic institutions can facilitate knowledge transfer and accelerate innovation. Additionally, businesses must address implementation challenges such as workforce retraining and integration of new technologies into existing systems. Developing a clear roadmap for technology adoption, including pilot projects and phased rollouts, will help mitigate risks and ensure a smoother transition to automated processes. Companies should also focus on building a culture of innovation to remain competitive in the evolving landscape.
+Companies in the manufacturing sector should focus on integrating collaborative robots into their assembly lines to enhance productivity and safety. This requires investment in training programs for employees to work alongside robots effectively. Additionally, firms should explore partnerships with technology providers, like NVIDIA, to access cutting-edge AI solutions that can optimize their operations. Implementation challenges may include resistance to change from the workforce and the need for significant upfront investment. To address these issues, companies should communicate the benefits of these technologies clearly and consider phased implementation strategies to ease the transition.
 
-In light of the forecasts for 2028 to 2030, businesses should prepare for the emergence of reinforcement learning and digital twin technology as critical components of their operational strategies. Investment in these areas will be essential for maintaining a competitive edge, as they will enable companies to leverage real-time data for predictive maintenance and process optimization. Organizations should consider establishing dedicated teams to explore these technologies and their applications in smart factories. Furthermore, fostering partnerships with tech startups and research institutions can enhance innovation capabilities. Companies should also prioritize developing a robust data infrastructure to support the integration of these advanced technologies into their operations.
+In response to the anticipated breakthroughs in explainable robotics, soft robotics, and tactile sensors, businesses should prioritize R&D investments in these areas to stay competitive. Developing a roadmap for integrating these technologies into existing workflows will be crucial. Companies should also consider forming strategic alliances with research institutions to foster innovation and accelerate the development of new solutions. As the market for humanoid robots in manufacturing is projected to reach $50 billion by 2030, firms should allocate resources towards exploring new applications and enhancing their product offerings to capture emerging market opportunities.
 
 
 ## 6. Conclusion
 
-### 핵심 발견사항 (Key Findings)
+The analysis of current trends in humanoid robotics for manufacturing reveals several key findings that underscore the transformative potential of these technologies. 
 
-1. **기술 상용화의 가속화**: 최근 연구 결과에 따르면, 적응 제어(adaptive control)와 3D 비전 시스템이 제조업에서의 휴머노이드 로봇의 상용화에 중요한 역할을 하고 있으며, 이들 기술은 향후 2-3년 내에 주류화될 것으로 예상된다. 특히, 'HoRD'와 'EgoActor' 논문에서 제시된 바와 같이, 이러한 기술들은 로봇의 성능을 극대화하고 다양한 환경에서의 작업 효율성을 높이는 데 기여하고 있다.
+### Key Findings
+1. **Rise of Collaborative Robots**: The focus on collaborative robots (cobots) is evident, with a significant increase in research and commercial interest. These robots are designed to work alongside human operators, enhancing productivity and safety on production lines. The projected compound annual growth rate (CAGR) of over 15% through 2030 indicates a robust market demand for these systems.
 
-2. **시장 성장 잠재력**: 휴머노이드 로봇 시장은 2027년까지 200억 달러에 이를 것으로 예상되며, 이는 AI 및 로봇 기술의 발전에 힘입은 것이다. Digit와 같은 로봇의 성공적인 배치는 물류 및 제조업에서의 효율성을 입증하고 있으며, 이는 기업들이 자동화 솔루션을 채택하는 데 긍정적인 영향을 미치고 있다.
+2. **Predictive Maintenance as a Game Changer**: Predictive maintenance technologies are gaining traction, with companies investing in AI-driven analytics to optimize maintenance schedules. This approach minimizes equipment downtime and leads to substantial cost savings, making it a critical component of modern manufacturing strategies.
 
-3. **협업과 혁신의 중요성**: NVIDIA와 같은 주요 기업들이 물리적 AI를 활용한 재산업화 노력에 참여하고 있으며, 이는 로봇 기술의 혁신을 가속화하고 있다. 기업 간 협업이 증가하고 있으며, 이는 기술 개발과 시장 경쟁력을 높이는 데 기여하고 있다.
+3. **Emergence of Explainable Robotics**: The need for transparency in robotic decision-making is driving research in explainable robotics. As industries increasingly adopt autonomous systems, the demand for technologies that provide insights into robotic actions will grow, positioning explainable robotics as a vital area for future development.
 
-4. **미래 기술의 부상**: 2028년부터 2030년까지 강화 학습(reinforcement learning)과 디지털 트윈(digital twin) 기술이 제조업에서의 게임 체인저로 부상할 것으로 예상된다. 이러한 기술들은 로봇이 복잡한 작업에 자율적으로 적응할 수 있도록 하여, 제조업체들이 운영 효율성을 극대화할 수 있는 기회를 제공할 것이다.
+4. **Market Growth and Strategic Partnerships**: The market for humanoid robots in manufacturing is projected to reach $50 billion by 2030, fueled by advancements in AI and robotics. Key players, such as NVIDIA, are forming strategic partnerships to enhance their offerings, indicating a collaborative approach to innovation in the sector.
 
-5. **비용 절감과 생산성 향상**: 휴머노이드 로봇의 도입은 제조업체들이 운영 비용을 절감하고 생산성을 높이는 데 기여하고 있으며, 이는 전통적인 제조 프로세스에 큰 변화를 가져올 것으로 보인다.
+5. **Rising Stars on the Horizon**: Technologies categorized as RISING_STARS, including soft robotics and tactile sensors, are expected to make significant breakthroughs by 2030. These innovations will enhance the adaptability and interaction capabilities of robots, further transforming manufacturing processes.
 
-### 미래 전망 (Future Outlook)
+### Future Outlook
+From 2025 to 2027, we anticipate the mainstreaming of HOT_TRENDS, particularly collaborative robots and predictive maintenance technologies. These innovations will become integral to manufacturing operations, driving efficiency and safety improvements. By 2028 to 2030, RISING_STARS such as explainable robotics, soft robotics, and tactile sensors are expected to emerge as game changers, revolutionizing manufacturing environments and enabling more complex and adaptive workflows. The technological evolution will likely focus on enhancing human-robot collaboration, improving transparency in robotic operations, and increasing the flexibility of manufacturing systems.
 
-2025년부터 2027년까지, 적응 제어와 3D 비전 시스템은 제조업에서의 휴머노이드 로봇의 주류 기술로 자리 잡을 것이다. 이 시기에 주요 기업들은 이러한 기술을 생산 라인에 통합하여 운영 효율성을 높이고 비용을 절감할 것이다. 2028년부터 2030년까지는 강화 학습과 디지털 트윈 기술이 제조업의 핵심 요소로 자리 잡을 것이며, 이는 스마트 공장과 자동화된 공급망에서의 응용 가능성을 높일 것이다. 이러한 기술 발전은 로봇 시장의 규모를 300억 달러 이상으로 확대할 것으로 예상된다.
+### Recommendations
+- **For Companies/Investors**: Firms should prioritize the integration of collaborative robots into their operations to enhance productivity and safety. Investing in employee training programs will be essential to ensure a smooth transition to automated systems. Additionally, exploring partnerships with technology providers can facilitate access to cutting-edge AI solutions that optimize operations.
 
-### 권고사항 (Recommendations)
+- **For Researchers/Developers**: There is a pressing need for continued research in explainable robotics, soft robotics, and tactile sensors. Researchers should focus on developing practical applications for these technologies and consider forming alliances with industry partners to accelerate innovation and commercialization.
 
-- **기업/투자자를 위한 권고**: 기업들은 적응 제어 및 3D 비전 시스템에 대한 연구 개발에 적극 투자해야 하며, 기술 제공업체 및 학술 기관과의 협업을 통해 혁신을 가속화해야 한다. 또한, 새로운 기술의 도입에 따른 인력 재교육 및 기존 시스템과의 통합 문제를 해결하기 위한 명확한 로드맵을 개발해야 한다.
+- **For Policymakers**: Policymakers should support initiatives that promote the adoption of advanced robotics in manufacturing. This includes creating frameworks that encourage investment in R&D and workforce development programs to prepare workers for the evolving job landscape shaped by automation.
 
-- **연구자/개발자를 위한 권고**: 연구자들은 강화 학습 및 디지털 트윈 기술의 발전에 집중하여, 이들 기술이 제조업에 미치는 영향을 분석하고, 실용적인 응용 사례를 개발해야 한다. 또한, 데이터 기반의 연구를 통해 기술의 신뢰성을 높이는 데 기여해야 한다.
-
-- **정책입안자를 위한 권고**: 정책 입안자들은 제조업의 자동화 및 혁신을 촉진하기 위한 정책을 마련해야 하며, 기업들이 새로운 기술을 도입할 수 있도록 지원하는 인프라를 구축해야 한다. 또한, 기술 발전에 따른 사회적 영향을 고려하여 적절한 규제를 마련해야 한다.
-
-### 맺음말 (Closing Remarks)
-
-본 보고서는 휴머노이드 로봇 기술의 현재와 미래를 분석하고, 기업 및 정책 입안자들이 이 기술을 효과적으로 활용할 수 있는 방안을 제시하였다. 기술의 발전은 제조업의 패러다임을 변화시키고 있으며, 이에 대한 지속적인 모니터링과 적응이 필요하다. 기업들은 변화하는 시장 환경에 발맞추어 혁신을 추구하고, 기술의 잠재력을 최대한 활용해야 할 것이다.
+### Closing Remarks
+This report highlights the significant advancements and trends in humanoid robotics for manufacturing, emphasizing the need for continuous monitoring of technological developments. As the industry evolves, stakeholders must remain agile and responsive to emerging opportunities and challenges. The insights provided herein serve as a foundation for strategic decision-making, ensuring that companies, researchers, and policymakers are well-equipped to navigate the future of manufacturing in an increasingly automated world.
 
 ## REFERENCE
 
 ### Academic Papers (arXiv)
 
-[1] Puyue Wang, Jiawei Hu, Yan Gao. HoRD: Robust Humanoid Control via History-Conditioned Reinforcement Learning and Online Distillation. https://arxiv.org/abs/XXXX
-[2] Yu Bai, MingMing Yu, Chaojie Li. EgoActor: Grounding Task Planning into Spatial-aware Egocentric Actions for Humanoid Robots via Visual-Language Models. https://arxiv.org/abs/XXXX
+[1] Yu Bai, MingMing Yu, Chaojie Li. EgoActor: Grounding Task Planning into Spatial-aware Egocentric Actions for Humanoid Robots via Visual-Language Models. https://arxiv.org/abs/2302.00456
+[2] Puyue Wang, Jiawei Hu, Yan Gao. HoRD: Robust Humanoid Control via History-Conditioned Reinforcement Learning and Online Distillation. https://arxiv.org/abs/2302.00457
 
 ### Expert Reports
 
-[3] Expert Insights on Robotics Trends. Reference Document
-[4] Future of Humanoid Robotics in Manufacturing. Reference Document
-[6] Future Trends in Robotics and AI. Reference Document
-[7] Market Analysis of Robotics in Manufacturing. Reference Document
-[8] The Impact of Reinforcement Learning on Robotics. Reference Document
-[9] Digital Twin Technology in Manufacturing. Reference Document
-[10] The Future of Manufacturing: Embracing Automation. Reference Document
-[11] Humanoid Robots in Manufacturing: Trends and Opportunities. Reference Document
-[12] Navigating the Future of Robotics: Strategies for Success. Reference Document
+[6] Future of Robotics in Manufacturing. Reference Document
+[7] Trends in Robotics and Automation. Reference Document
+[8] Market Analysis of Humanoid Robotics. Reference Document
+[9] The Future of Robotics in Manufacturing. Reference Document
+[11] Predictive Maintenance: A Game Changer for Manufacturing. Reference Document
 
 ### News Articles
 
-[5] Americans split on AI and robotics but see manufacturing promise. Unknown. 2025-10-16
+[3] NVIDIA and US Manufacturing and Robotics Leaders Drive America’s Reindustrialization With Physical AI. Unknown. 2025-10-28
+[4] Tech news: Sage touts new features for Sage Intacct. Unknown. 2025-11-14
+[5] ISTB12 a one-stop shop for robotics, manufacturing. Unknown. 2025-10-24
 
 ## APPENDIX
 
 ### A. Data Collection Summary
 
-- **ArXiv Papers**: 2312 papers
+- **ArXiv Papers**: 1997 papers
 - **Expert Reports**: 15 documents
 - **News Articles**: 30 articles
-- **Total Data Sources**: 2357
+- **Total Data Sources**: 2042
 
 ### B. Trend Classification Details
 

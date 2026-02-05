@@ -173,11 +173,6 @@ class WorkflowBuilder:
                 tools=[tools['revision'], tools['recollection']],
                 config=create_config("WriterAgent", "Report assembly and review")
             ),
-            'revision': RevisionLLM(
-                llm=self.llm,
-                tools=[],
-                config=create_config("RevisionLLM", "Report revision")
-            )
         }
 
         return self._agents
@@ -197,7 +192,6 @@ class WorkflowBuilder:
             content_analysis_agent=agents['content_analysis'],
             report_synthesis_agent=agents['report_synthesis'],
             writer_agent=agents['writer'],
-            revision_agent=agents['revision'],
             refine_plan_tool=utils['refine_plan'],
             feedback_classifier_tool=utils['feedback_classifier']
         )

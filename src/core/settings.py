@@ -30,7 +30,7 @@ class Settings(BaseSettings, metaclass=SettingsMeta):
     # ===== OpenAI =====
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", env="OPENAI_MODEL")
-    openai_temperature: float = Field(default=0.7, env="OPENAI_TEMPERATURE")
+    openai_temperature: float = Field(default=0.2, env="OPENAI_TEMPERATURE")
     
     # ===== Embedding Model =====
     embedding_model: str = Field(

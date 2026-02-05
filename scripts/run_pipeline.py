@@ -67,7 +67,7 @@ async def run_pipeline_async(user_input: str):
             settings = Settings()
             
             eval_llm = ChatOpenAI(
-                model=settings.openai_model,
+                model="gpt-4o",
                 temperature=0,
                 api_key=settings.openai_api_key 
             )
@@ -75,7 +75,7 @@ async def run_pipeline_async(user_input: str):
             eval_config = AgentConfig(
                 name="PostRunEvaluator",
                 description="Evaluate the final report quality",
-                model_name=settings.openai_model 
+                model_name="gpt-4o"
             )
 
             eval_agent = EvaluationAgent(
@@ -164,7 +164,6 @@ def main():
         if "folder_name" in result:
             print(f"\n💾 Data saved to: data/raw/{result['folder_name']}/")
 
-        # [추가] 평가 점수 출력
         if "evaluation_results" in result:
             scores = result["evaluation_results"]
             print(f"\n📊 Quality Scores:")

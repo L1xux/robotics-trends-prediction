@@ -1,9 +1,9 @@
 """
-Evaluation Agent (Standalone / Thread Isolated)
-워크플로우 외부에서 독립적으로 실행되며, Ragas를 별도 스레드에서 구동합니다.
+Evaluation Agent (Full Content / Thread Isolated)
+워크플로우 외부에서 독립적으로 실행되며, 
+샘플링 없이 전체 리포트와 전체 컨텍스트를 사용하여 정밀 평가를 수행합니다.
 """
 import asyncio
-import random
 import traceback
 from typing import List, Any
 
@@ -42,51 +42,50 @@ class EvaluationAgent(BaseAgent):
                 temperature=0, 
                 api_key=llm.openai_api_key,
                 model_kwargs={"response_format": {"type": "json_object"}},
-                request_timeout=300 
+                request_timeout=600  # 데이터가 많아지므로 타임아웃을 5분 -> 10분으로 증가
             )
         else:
             self.ragas_llm = llm
 
     async def execute(self, state: PipelineState) -> PipelineState:
-        print(f"\n{'='*60}\n🔍 [EvaluationAgent] Starting Post-Process Evaluation\n{'='*60}")
+        print(f"\n{'='*60}\n🔍 [EvaluationAgent] Starting Full-Context Evaluation\n{'='*60}")
 
         try:
             question = state.get("user_input", "")
             answer = state.get("final_report", "")
             
-            # 1. 리포트 샘플링 (8000자 제한)
-            if len(answer) > 8000:
-                print(f"   ✂️ Report sampled to 8000 chars.")
-                answer = self._sample_random_paragraphs(answer, max_chars=8000)
+            # [변경] 리포트 샘플링 로직 제거 (전체 내용 사용)
+            if not answer:
+                print("   ❌ No report content to evaluate.")
+                state["evaluation_results"] = {"faithfulness": 0.0, "answer_relevancy": 0.0}
+                return state
+            
+            print(f"   📄 Evaluating Report Length: {len(answer)} chars")
 
+            # 컨텍스트 추출
             rag_results = state.get("rag_results", {})
             contexts = self._extract_contexts(rag_results)
             
-            # 2. 컨텍스트 샘플링 (최대 5개)
-            if len(contexts) > 5:
-                contexts = random.sample(contexts, 5)
-
+            # [변경] 컨텍스트 샘플링 로직 제거 (전체 문서 사용)
+            # RAG 데이터가 없으면 뉴스 데이터 사용
             if not contexts:
                 news_data = state.get("news_data", {})
-                all_news = self._extract_news_contexts(news_data)
-                if all_news:
-                    contexts = random.sample(all_news, min(len(all_news), 5))
+                contexts = self._extract_news_contexts(news_data)
 
             if not contexts:
-                print("   ❌ No data to evaluate.")
+                print("   ❌ No context data available for evaluation.")
                 state["evaluation_results"] = {"faithfulness": 0.0, "answer_relevancy": 0.0}
                 return state
+
+            print(f"   📚 Using All Contexts: {len(contexts)} documents")
 
             # 데이터셋 준비
             data_dict = {"question": [question], "answer": [answer], "contexts": [contexts]}
             dataset = Dataset.from_dict(data_dict)
             
-            print(f"   🚀 Offloading Ragas to separate thread...")
+            print(f"   🚀 Offloading Ragas to separate thread (Full Data)...")
 
-            # ---------------------------------------------------------
-            # [핵심] Ragas 실행을 별도 스레드로 격리 (Thread Offloading)
-            # 메인 루프와의 간섭을 피하기 위해 동기 함수를 스레드로 실행
-            # ---------------------------------------------------------
+
             def run_ragas_sync():
                 try:
                     return evaluate(
@@ -95,10 +94,11 @@ class EvaluationAgent(BaseAgent):
                         llm=self.ragas_llm,
                         embeddings=self.embeddings,
                         raise_exceptions=True,
-                        run_config=RunConfig(timeout=300, max_retries=1)
+                        run_config=RunConfig(timeout=600, max_retries=2) # 타임아웃/재시도 증가
                     )
                 except Exception as inner_e:
                     print(f"   ⚠️ Ragas Internal Error: {inner_e}")
+                    # traceback.print_exc() # 필요시 주석 해제하여 상세 로그 확인
                     return None
 
             results = await asyncio.to_thread(run_ragas_sync)
@@ -128,35 +128,32 @@ class EvaluationAgent(BaseAgent):
 
         return state
 
-    def _sample_random_paragraphs(self, text: str, max_chars: int) -> str:
-        paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-        if len(paragraphs) < 3: paragraphs = [p.strip() for p in text.split('\n') if p.strip()]
-        if not paragraphs: return text[:max_chars]
-        random.shuffle(paragraphs)
-        selected = []
-        curr_len = 0
-        for p in paragraphs:
-            if curr_len + len(p) < max_chars:
-                selected.append(p)
-                curr_len += len(p)
-            else: break
-        return "\n\n".join(selected)
-
     def _extract_contexts(self, rag_results: Any) -> List[str]:
+        """RAG 결과에서 모든 문서 내용 추출"""
         contexts = []
         if isinstance(rag_results, dict):
             documents = rag_results.get("documents", [])
             for doc in documents:
-                content = doc.get("content") or doc.get("page_content") if isinstance(doc, dict) else getattr(doc, "page_content", "")
-                if content: contexts.append(content)
+                # 다양한 문서 포맷 대응 (dict, Document 객체 등)
+                content = None
+                if isinstance(doc, dict):
+                    content = doc.get("content") or doc.get("page_content")
+                else:
+                    content = getattr(doc, "page_content", None) or getattr(doc, "content", None)
+                
+                if content and isinstance(content, str) and content.strip():
+                    contexts.append(content)
         return contexts
 
     def _extract_news_contexts(self, news_data: Any) -> List[str]:
+        """뉴스 데이터에서 모든 기사 요약 추출"""
         contexts = []
         if isinstance(news_data, dict) and "news" in news_data:
             for entry in news_data["news"]:
                 for article in entry.get("articles", []):
-                    contexts.append(article.get("description", ""))
+                    desc = article.get("description", "")
+                    if desc and desc.strip():
+                        contexts.append(desc)
         return contexts
 
     evaluate_report = execute
