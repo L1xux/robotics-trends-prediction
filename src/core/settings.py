@@ -2,7 +2,7 @@
 전역 설정 관리 (Pydantic BaseSettings with Singleton)
 환경변수 기반 설정
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict  
 from pydantic import Field
 from pathlib import Path
 from typing import Optional
@@ -19,10 +19,17 @@ class SettingsMeta(Singleton, type(BaseSettings)):
 
 class Settings(BaseSettings, metaclass=SettingsMeta):
     """애플리케이션 전역 설정"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore", 
+        case_sensitive=False
+    )
     
     # ===== OpenAI =====
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")
-    openai_model: str = Field(default="gpt-4o", env="OPENAI_MODEL")
+    openai_model: str = Field(default="gpt-4o-mini", env="OPENAI_MODEL")
     openai_temperature: float = Field(default=0.7, env="OPENAI_TEMPERATURE")
     
     # ===== Embedding Model =====
@@ -109,11 +116,6 @@ class Settings(BaseSettings, metaclass=SettingsMeta):
     def REPORTS_DIR(self) -> Path:
         """대문자 alias (deprecated, use data_reports_path)"""
         return self.data_reports_path
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
 
 
 def get_settings() -> Settings:

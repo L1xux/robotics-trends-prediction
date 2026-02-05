@@ -12,6 +12,7 @@ Features:
 - Singleton for settings management
 - Interactive prompt for user input
 - Full async workflow execution
+- Post-Pipeline Ragas Evaluation
 """
 
 import sys
@@ -19,13 +20,22 @@ import asyncio
 import platform
 import argparse
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# Load environment variables
+load_dotenv()
+
 # Use new workflow creation method
 from src.graph.workflow import create_workflow_manager
+
+from src.agents.evaluation_agent import EvaluationAgent
+from src.agents.base.agent_config import AgentConfig
+from src.core.settings import Settings
+from langchain_openai import ChatOpenAI
 
 
 async def run_pipeline_async(user_input: str):
@@ -42,11 +52,48 @@ async def run_pipeline_async(user_input: str):
     print(f"🚀 Starting pipeline...")
     print(f"{'='*60}\n")
 
-    # Create workflow manager (initializes with Design Patterns)
+    # Create workflow manager
     workflow_manager = create_workflow_manager()
 
     # Run the workflow
     final_state = await workflow_manager.run_workflow(user_input)
+
+    if "final_report" in final_state and final_state["final_report"]:
+        print(f"\n{'='*60}")
+        print(f"🔍 Starting Post-Pipeline Quality Evaluation (Ragas)")
+        print(f"{'='*60}")
+        
+        try:
+            settings = Settings()
+            
+            eval_llm = ChatOpenAI(
+                model=settings.openai_model,
+                temperature=0,
+                api_key=settings.openai_api_key 
+            )
+
+            eval_config = AgentConfig(
+                name="PostRunEvaluator",
+                description="Evaluate the final report quality",
+                model_name=settings.openai_model 
+            )
+
+            eval_agent = EvaluationAgent(
+                llm=eval_llm, 
+                config=eval_config, 
+                settings=settings
+            )
+
+            # 평가 실행 및 결과 state 업데이트
+            final_state = await eval_agent.execute(final_state)
+            
+        except Exception as e:
+            print(f"⚠️ Evaluation skipped due to error: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("\n⚠️ No final report generated. Skipping evaluation.")
+    # ------------------------------------------------------------------
 
     return final_state
 
@@ -75,7 +122,6 @@ def main():
     print("="*60)
 
     try:
-        # Get user input
         if args.topic:
             user_input = args.topic
             print(f"\n📝 Topic: {user_input}")
@@ -92,10 +138,8 @@ def main():
 
         print(f"\n✅ Topic received: {user_input}")
 
-        # Run pipeline asynchronously
         result = asyncio.run(run_pipeline_async(user_input))
 
-        # Print summary
         print(f"\n{'='*60}")
         print(f"✅ Pipeline Complete!")
         print(f"{'='*60}")
@@ -107,19 +151,39 @@ def main():
 
         if "data_collection_status" in result:
             status = result["data_collection_status"]
-            print(f"\n📦 Data Collection:")
-            print(f"   ArXiv: {status.arxiv_count} papers")
-            print(f"   RAG: {status.rag_count} documents")
-            print(f"   News: {status.news_count} articles")
-            print(f"   Quality: {status.quality_score:.2f}")
-            print(f"   Status: {status.status}")
+            if hasattr(status, 'arxiv_count'):
+                print(f"\n📦 Data Collection:")
+                print(f"   ArXiv: {status.arxiv_count} papers")
+                print(f"   RAG: {status.rag_count} documents")
+                print(f"   News: {status.news_count} articles")
+                print(f"   Quality: {status.quality_score:.2f}")
+                print(f"   Status: {status.status}")
+            else:
+                print(f"\n📦 Data Collection Status: {status}")
 
         if "folder_name" in result:
             print(f"\n💾 Data saved to: data/raw/{result['folder_name']}/")
 
+        # [추가] 평가 점수 출력
+        if "evaluation_results" in result:
+            scores = result["evaluation_results"]
+            print(f"\n📊 Quality Scores:")
+            print(f"   • Faithfulness: {scores.get('faithfulness', 0.0):.2f}")
+            print(f"   • Answer Relevancy: {scores.get('answer_relevancy', 0.0):.2f}")
+
         if "final_report" in result:
             print(f"\n📄 Report Generated!")
             print(f"   Status: {result.get('status', 'unknown')}")
+            
+            # 리포트 파일로 저장 (선택 사항)
+            try:
+                topic_slug = user_input.replace(" ", "_").lower()[:50]
+                filename = f"report_{topic_slug}.md"
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write(result["final_report"])
+                print(f"   Saved to file: {filename}")
+            except Exception as e:
+                print(f"   ⚠️ Failed to save report file: {e}")
 
         print(f"\n{'='*60}\n")
     
@@ -136,4 +200,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

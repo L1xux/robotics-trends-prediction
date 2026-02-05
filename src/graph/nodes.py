@@ -9,13 +9,18 @@ from datetime import datetime
 from functools import partial, wraps
 import json
 
+from typing import Dict, Callable, Any
+from src.agents.base.base_agent import BaseAgent
+
+
 from src.graph.state import PipelineState, WorkflowStatus
-from src.cli.human_review import ProgressDisplay
+from src.cli.human_review import ProgressDisplay, ReviewCLI
 
 # Agents
 from src.agents.planning_agent import PlanningAgent
 from src.agents.data_collection_agent import DataCollectionAgent
 from src.agents.writer_agent import WriterAgent
+from src.agents.evaluation_agent import EvaluationAgent
 
 # LLMs
 from src.llms.content_analysis_llm import ContentAnalysisLLM
@@ -185,6 +190,58 @@ async def writer_node(
     progress.show_agent_complete("Writer Agent", status_msg)
     return new_state
 
+@handle_node_error("Phase 8: Evaluation", WorkflowStatus.WRITER_COMPLETE)
+async def evaluation_node(
+    state: PipelineState,
+    evaluation_agent: EvaluationAgent
+) -> PipelineState:
+    """
+    평가 노드
+    EvaluationAgent를 사용하여 보고서 품질을 측정하고 State를 업데이트합니다.
+    """
+    progress.show_phase_start("Phase 8: Evaluation", "Assessing report quality with Ragas")
+    
+    scores = await evaluation_agent.evaluate_report(state)
+    
+    return {
+        "evaluation_scores": scores
+    }
+
+def human_review_node(state: PipelineState) -> PipelineState:
+    """
+    Phase 9: Human Review Node
+    
+    사용자에게 최종 보고서와 평가 점수를 보여주고, 승인/수정 여부를 결정합니다.
+    """
+    progress.show_phase_start("Phase 9: Human Review", "Waiting for user feedback...")
+
+    # CLI 도구 초기화
+    cli = ReviewCLI()
+    
+    # State에서 필요한 데이터 꺼내기
+    report_content = state.get("final_report", "")
+    quality_report = state.get("quality_check_result", {})
+    evaluation_scores = state.get("evaluation_scores", {}) # Ragas 점수
+    
+    # CLI 화면 표시 (수정된 display_final_review 사용)
+    decision, feedback = cli.display_final_review(
+        report_content=report_content,
+        quality_report=quality_report,
+        evaluation_scores=evaluation_scores
+    )
+
+    # 사용자 결정에 따라 상태 업데이트
+    if decision == "accept":
+        state["status"] = WorkflowStatus.REPORT_ACCEPTED
+        progress.show_info("User accepted the report.")
+    else:
+        # 수정 요청 시
+        state["status"] = WorkflowStatus.NEEDS_MINOR_REVISION
+        state["review_feedback"] = feedback
+        progress.show_warning(f"User requested revision: {feedback}")
+
+    state["updated_at"] = datetime.now().isoformat()
+    return state
 
 async def end_node(
     state: PipelineState,
@@ -195,16 +252,16 @@ async def end_node(
     final_status = state.get("status", "unknown")
 
     if final_status == "planning_rejected":
-        progress.show_warning("⚠️ Workflow terminated: Planning rejected")
+        progress.show_warning("Workflow terminated: Planning rejected")
         state.update({"status": "workflow_complete", "updated_at": datetime.now().isoformat()})
         return state
 
     if "failed" in final_status:
-        progress.show_error(f"❌ Workflow failed: {final_status}")
+        progress.show_error(f"Workflow failed: {final_status}")
         state.update({"status": "workflow_complete", "updated_at": datetime.now().isoformat()})
         return state
 
-    progress.show_info("✅ Workflow completed successfully")
+    progress.show_info("Workflow completed successfully")
 
     try:
         english_report = state.get("final_report", "")
@@ -214,10 +271,10 @@ async def end_node(
             return state
 
         # Translate
-        print("\n🌐 Translating to Korean...")
+        print("\nTranslating to Korean...")
         try:
             korean_report = await writer_agent._translate_to_korean(english_report)
-            print("✅ Translation complete")
+            print("Translation complete")
             state["final_report_korean"] = korean_report
         except Exception as e:
             progress.show_error(f"Translation failed: {e}")
@@ -279,27 +336,40 @@ async def end_node(
 # Binding
 # =========================================================
 
-def bind_nodes(
-    *,
-    planning_agent: PlanningAgent,
-    data_collection_agent: DataCollectionAgent,
-    content_analysis_agent: ContentAnalysisLLM,
-    report_synthesis_agent: ReportSynthesisLLM,
-    writer_agent: WriterAgent,
-    revision_agent: RevisionLLM,
-    refine_plan_tool: RefinePlanUtil,
-    feedback_classifier_tool: Any = None,
-) -> Dict[str, Callable]:
-    """Bind dependencies to nodes"""
-    return {
-        "planning": partial(planning_node, planning_agent=planning_agent, refine_plan_tool=refine_plan_tool),
-        "data_collection": partial(data_collection_node, data_collection_agent=data_collection_agent),
-        "content_analysis": partial(content_analysis_node, content_analysis_agent=content_analysis_agent),
-        "report_synthesis": partial(report_synthesis_node, report_synthesis_agent=report_synthesis_agent),
-        "writer": partial(writer_node, writer_agent=writer_agent),
-        "end": partial(end_node, writer_agent=writer_agent),
-    }
+"""
+Node Binding Module
+LangGraph의 노드 이름과 실제 실행 함수(Agent.execute or Tool.run)를 매핑합니다.
+"""
 
+
+def bind_nodes(
+    planning_agent: BaseAgent,
+    data_collection_agent: BaseAgent,
+    content_analysis_agent: BaseAgent,
+    report_synthesis_agent: BaseAgent,
+    writer_agent: BaseAgent,
+    revision_agent: BaseAgent,
+    refine_plan_tool: Any,
+    feedback_classifier_tool: Any
+) -> Dict[str, Callable]:
+    """
+    워크플로우 노드 이름과 실행 함수를 바인딩합니다.
+    Evaluation 노드는 워크플로우 외부에서 실행되므로 여기서 제외됩니다.
+    """
+    
+    return {
+        # Agents -> Nodes
+        "planning": planning_agent.execute,
+        "data_collection": data_collection_agent.execute,
+        "content_analysis": content_analysis_agent.execute,
+        "report_synthesis": report_synthesis_agent.execute,
+        "writer": writer_agent.execute,
+        "revision": revision_agent.execute,
+        
+        # Tools -> Nodes
+        "refine_plan": refine_plan_tool.run,
+        "feedback_classifier": feedback_classifier_tool.run
+    }
 
 __all__ = [
     "planning_node",
@@ -308,5 +378,7 @@ __all__ = [
     "report_synthesis_node",
     "writer_node",
     "end_node",
+    "evaluation_node",
+    "human_review_node",
     "bind_nodes",
 ]

@@ -15,7 +15,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ```bash
 # OpenAI 설정
-OPENAI_MODEL=gpt-4o
+OPENAI_MODEL=gpt-4o-mini
 OPENAI_TEMPERATURE=0.7
 
 # Embedding 모델 설정
@@ -69,7 +69,7 @@ OPENAI_API_KEY=sk-your-actual-api-key-here
 ## 환경변수 설명
 
 - **OPENAI_API_KEY**: OpenAI API 키 (필수)
-- **OPENAI_MODEL**: 사용할 OpenAI 모델 (기본값: gpt-4o)
+- **OPENAI_MODEL**: 사용할 OpenAI 모델 (기본값: gpt-4o-mini)
 - **OPENAI_TEMPERATURE**: 모델의 창의성 수준 (0.0-1.0, 기본값: 0.7)
 - **EMBEDDING_MODEL**: 임베딩 모델 (기본값: nomic-ai/nomic-embed-text-v1.5)
 - **CHROMADB_PATH**: ChromaDB 저장 경로

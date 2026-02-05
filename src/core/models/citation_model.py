@@ -33,13 +33,13 @@ class CitationEntry(BaseModel):
     def to_reference_text(self) -> str:
         """Generate reference list text"""
         if self.source_type == "arxiv":
-            return f"[{self.number}] {self.authors or 'Unknown'}. {self.title}. {self.url or ''}"
+            return f"{self.authors or 'Unknown'}. {self.title}. {self.url or ''}"
         elif self.source_type == "news":
-            return f"[{self.number}] {self.title}. {self.source or 'Unknown'}. {self.date or ''}"
+            return f"{self.title}. {self.source or 'Unknown'}. {self.date or ''}"
         elif self.source_type == "report":
-            return f"[{self.number}] {self.title}. {self.source or 'Reference Document'}"
+            return f"{self.title}. {self.source or 'Reference Document'}"
         else:
-            return f"[{self.number}] {self.title}"
+            return f"{self.title}"
 
 
 class Citation(BaseModel):

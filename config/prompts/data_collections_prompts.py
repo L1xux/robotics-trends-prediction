@@ -215,8 +215,8 @@ RAG 결과:
 ```
 
 **중요:** 
-- overall_score가 0.7 이상이면 sufficient: true
-- overall_score가 0.7 미만이면 sufficient: false
+- overall_score가 0.6 이상이면 sufficient: true
+- overall_score가 0.6 미만이면 sufficient: false
 - 각 section별로 구체적인 평가를 해주세요
 - 부족한 부분이 있다면 구체적으로 어떤 데이터가 더 필요한지 알려주세요
 """

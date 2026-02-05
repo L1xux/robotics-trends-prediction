@@ -1,1 +1,0 @@
-# Setup validation script

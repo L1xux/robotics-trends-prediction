@@ -283,9 +283,11 @@ class ArxivTool(BaseTool):
         if len(keywords) > 10:
             print(f"   ⚠️  Warning: {len(keywords)} keywords provided (recommended: ≤10)")
             print(f"   ⚠️  Complex queries may cause ArXiv API errors")
+       
+        cleaned_keywords = [kw.replace("_", " ") for kw in keywords]
         
         # 키워드를 OR로 연결
-        keyword_query = " OR ".join([f'all:"{kw}"' for kw in keywords])
+        keyword_query = " OR ".join([f'all:"{kw}"' for kw in cleaned_keywords])
         
         # 카테고리 필터
         if categories != "all":

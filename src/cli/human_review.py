@@ -132,23 +132,11 @@ class ReviewCLI:
     def display_final_review(
         self,
         report_content: str,
-        quality_report: Dict[str, Any]
+        quality_report: Dict[str, Any],
+        evaluation_scores: Optional[Dict[str, float]] = None  # [추가] Ragas 점수 인자
     ) -> tuple[Literal["accept", "revise"], Optional[str]]:
         """
-        최종 리포트 리뷰 표시
-        
-        Args:
-            report_content: 전체 리포트 마크다운 내용
-            quality_report: QualityReport 딕셔너리
-                - overall_score
-                - section_scores
-                - strengths
-                - improvements
-        
-        Returns:
-            tuple: (decision, feedback)
-                - decision: "accept" or "revise"
-                - feedback: 수정 요청 사항 (revise 시에만)
+        최종 리포트 리뷰 표시 (Ragas 점수 포함)
         """
         self.console.clear()
         
@@ -161,37 +149,74 @@ class ReviewCLI:
         )
         self.console.print()
         
-        # Quality Score
-        score = quality_report['overall_score']
+        # ---------------------------------------------------------
+        # [추가] Ragas AI 신뢰도 점수 표시 영역
+        # ---------------------------------------------------------
+        if evaluation_scores:
+            faith = evaluation_scores.get('faithfulness', 0)
+            relevancy = evaluation_scores.get('answer_relevancy', 0)
+            
+            # 색상 결정 (0.8 이상이면 초록, 아니면 빨강)
+            faith_color = "green" if faith >= 0.8 else "red"
+            rel_color = "green" if relevancy >= 0.8 else "red"
+
+            ragas_table = Table(
+                title="🤖 AI Reliability (Ragas Evaluation)",
+                box=box.ROUNDED,
+                border_style="cyan",
+                show_header=True
+            )
+            ragas_table.add_column("Metric", style="bold white")
+            ragas_table.add_column("Score (0.0~1.0)", justify="center", width=15)
+            ragas_table.add_column("Description", style="dim")
+
+            ragas_table.add_row(
+                "Faithfulness", 
+                f"[{faith_color}]{faith:.2f}[/{faith_color}]",
+                "보고서 내용이 원본 문서(WEF, FTSG)와 일치하는가? (환각 여부)"
+            )
+            ragas_table.add_row(
+                "Answer Relevancy", 
+                f"[{rel_color}]{relevancy:.2f}[/{rel_color}]",
+                "사용자의 질문(주제)에 적절한 답변인가?"
+            )
+            
+            self.console.print(ragas_table)
+            self.console.print()
+        # ---------------------------------------------------------
+
+        # Quality Score (기존 LLM 자체 평가 점수)
+        score = quality_report.get('overall_score', 0)
         score_color = "green" if score >= 8.0 else "yellow" if score >= 6.0 else "red"
         
         self.console.print(
             Panel(
                 f"[bold {score_color}]{score:.1f} / 10.0[/bold {score_color}]",
-                title="Overall Quality Score",
+                title="Writing Quality Score (LLM Self-Check)",
                 border_style=score_color
             )
         )
         self.console.print()
         
         # Section Scores
-        section_table = Table(
-            title="📊 Section Scores",
-            box=box.ROUNDED,
-            border_style="blue"
-        )
-        section_table.add_column("Section", style="bold")
-        section_table.add_column("Score", justify="center")
-        
-        for section, sec_score in quality_report['section_scores'].items():
-            sec_color = "green" if sec_score >= 8.0 else "yellow" if sec_score >= 6.0 else "red"
-            section_table.add_row(
-                section,
-                f"[{sec_color}]{sec_score:.1f}[/{sec_color}]"
+        if 'section_scores' in quality_report:
+            section_table = Table(
+                title="Section Scores",
+                box=box.ROUNDED,
+                border_style="blue"
             )
-        
-        self.console.print(section_table)
-        self.console.print()
+            section_table.add_column("Section", style="bold")
+            section_table.add_column("Score", justify="center")
+            
+            for section, sec_score in quality_report['section_scores'].items():
+                sec_color = "green" if sec_score >= 8.0 else "yellow" if sec_score >= 6.0 else "red"
+                section_table.add_row(
+                    section,
+                    f"[{sec_color}]{sec_score:.1f}[/{sec_color}]"
+                )
+            
+            self.console.print(section_table)
+            self.console.print()
         
         # Strengths & Improvements
         layout = Layout()
@@ -201,7 +226,7 @@ class ReviewCLI:
         )
         
         # Strengths
-        strengths_text = "\n".join([f"• {s}" for s in quality_report['strengths']])
+        strengths_text = "\n".join([f"• {s}" for s in quality_report.get('strengths', [])])
         layout["strengths"].update(
             Panel(
                 strengths_text,
@@ -212,7 +237,7 @@ class ReviewCLI:
         )
         
         # Improvements
-        improvements_text = "\n".join([f"• {i}" for i in quality_report['improvements']])
+        improvements_text = "\n".join([f"• {i}" for i in quality_report.get('improvements', [])])
         layout["improvements"].update(
             Panel(
                 improvements_text,

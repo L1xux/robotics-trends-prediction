@@ -15,7 +15,7 @@
 - **ReAct 패턴**을 활용한 자율적 데이터 수집
   - RAG Tool: 전문가 보고서 검색 (BM25 + Cosine Similarity + MMR 방식)
   - News Crawler: 기술 뉴스 기사 수집
-- **데이터 충분성 자동 판단** (GPT-4o) 및 최대 3회 재시도
+- **데이터 충분성 자동 판단** (gpt-4o-mini) 및 최대 3회 재시도
 - 수집된 모든 데이터의 Citation 추가
 
 ### 2. **Human-in-the-Loop in Planning Phase**
@@ -50,7 +50,7 @@
 | Category        | Details                                      |
 |-----------------|----------------------------------------------|
 | **Framework**   | LangGraph, LangChain, Python 3.11            |
-| **LLM**         | GPT-4o via OpenAI API                        |
+| **LLM**         | gpt-4o-mini via OpenAI API                        |
 | **Retrieval**   | ChromaDB                                     |
 | **Embedding**   | HuggingFace, nomic-embed-text-v              |
 | **Web Tools**   | ArXiv API, GNews                             |
@@ -66,7 +66,7 @@
 
 2. **Data Collection Agent** (ReAct)
    - ArXiv 논문 수집 → 키워드 추출 → RAG/News 수집
-   - 데이터 충분성 자동 판단 (GPT-4o)
+   - 데이터 충분성 자동 판단 (gpt-4o-mini)
    - 최대 3회 재시도로 고품질 데이터 확보
 
 3. **Writer Agent** (도구는 코드 레벨에서 사용)
@@ -152,7 +152,7 @@ LangGraph의 공유 상태로 전체 워크플로우 데이터 관리:
 │  │  │    - 기술 뉴스 기사                                        │ │ │
 │  │  └──────────────────────────────────────────────────────────┘ │ │
 │  │                                                                 │ │
-│  │ 단계 3: 충분성 검사 (GPT-4o)                                     │ │
+│  │ 단계 3: 충분성 검사 (gpt-4o-mini)                                     │ │
 │  │  - 데이터 품질 및 범위 평가                                      │ │
 │  │  - 충분 → 진행  /  불충분 → 재시도 (최대 3회)                    │ │
 │  └────────────────────────────────────────────────────────────────┘ │
