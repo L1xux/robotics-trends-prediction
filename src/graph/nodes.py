@@ -22,7 +22,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from src.agents.planning_agent import PlanningAgent
 from src.agents.data_collection_agent import DataCollectionAgent
 from src.agents.writer_agent import WriterAgent
-from src.agents.evaluation_agent import EvaluationAgent
+from src.llms.evaluation_llm import EvaluationLLM
 
 # LLMs
 from src.llms.content_analysis_llm import ContentAnalysisLLM
@@ -194,15 +194,15 @@ async def writer_node(
 @handle_node_error("Phase 8: Evaluation", WorkflowStatus.WRITER_COMPLETE)
 async def evaluation_node(
     state: PipelineState,
-    evaluation_agent: EvaluationAgent
+    evaluation_llm: EvaluationLLM
 ) -> PipelineState:
     """
     평가 노드
-    EvaluationAgent를 사용하여 보고서 품질을 측정하고 State를 업데이트합니다.
+    EvaluationLLM을 사용하여 보고서 품질을 측정하고 State를 업데이트합니다.
     """
     progress.show_phase_start("Phase 8: Evaluation", "Assessing report quality with Ragas")
     
-    scores = await evaluation_agent.evaluate_report(state)
+    scores = await evaluation_llm.evaluate_report(state)
     
     return {
         "evaluation_scores": scores

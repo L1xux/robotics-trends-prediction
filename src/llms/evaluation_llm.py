@@ -1,5 +1,5 @@
 """
-Evaluation Agent Ragas
+Evaluation LLM with Ragas
 """
 import asyncio
 import traceback
@@ -10,8 +10,6 @@ nest_asyncio.apply()
 
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
-from src.agents.base.base_agent import BaseAgent
-from src.agents.base.agent_config import AgentConfig
 from src.graph.state import PipelineState
 from src.core.settings import Settings
 
@@ -21,9 +19,9 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from datasets import Dataset
 from ragas.run_config import RunConfig
 
-class EvaluationAgent(BaseAgent):
-    def __init__(self, llm: BaseChatModel, config: AgentConfig, tools: List[Any] = None, settings: Settings = None):
-        super().__init__(llm, tools or [], config)
+class EvaluationLLM:
+    def __init__(self, llm: BaseChatModel, settings: Settings = None):
+        self.llm = llm
         self.settings = settings or Settings()
         
         self.embeddings = HuggingFaceEmbeddings(
@@ -44,7 +42,7 @@ class EvaluationAgent(BaseAgent):
             self.ragas_llm = llm
 
     async def execute(self, state: PipelineState) -> PipelineState:
-        print(f"\n{'='*60}\n🔍 [EvaluationAgent] Starting Full-Context Evaluation\n{'='*60}")
+        print(f"\n{'='*60}\n🔍 [EvaluationLLM] Starting Full-Context Evaluation\n{'='*60}")
 
         try:
             question = state.get("user_input", "")

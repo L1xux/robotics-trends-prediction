@@ -32,8 +32,7 @@ load_dotenv()
 # Use new workflow creation method
 from src.graph.workflow import create_workflow_manager
 
-from src.agents.evaluation_agent import EvaluationAgent
-from src.agents.base.agent_config import AgentConfig
+from src.llms.evaluation_llm import EvaluationLLM
 from src.core.settings import Settings
 from langchain_openai import ChatOpenAI
 
@@ -72,20 +71,12 @@ async def run_pipeline_async(user_input: str):
                 api_key=settings.openai_api_key 
             )
 
-            eval_config = AgentConfig(
-                name="PostRunEvaluator",
-                description="Evaluate the final report quality",
-                model_name="gpt-4o-mini"
-            )
-
-            eval_agent = EvaluationAgent(
+            evaluation_llm = EvaluationLLM(
                 llm=eval_llm, 
-                config=eval_config, 
                 settings=settings
             )
 
-            # 평가 실행 및 결과 state 업데이트
-            final_state = await eval_agent.execute(final_state)
+            final_state = await evaluation_llm.execute(final_state)
             
         except Exception as e:
             print(f"⚠️ Evaluation skipped due to error: {e}")

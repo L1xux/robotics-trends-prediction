@@ -5,8 +5,10 @@ LLM Modules
 
 from src.llms.content_analysis_llm import ContentAnalysisLLM
 from src.llms.report_synthesis_llm import ReportSynthesisLLM
+from src.llms.evaluation_llm import EvaluationLLM
 
 __all__ = [
     "ContentAnalysisLLM",
     "ReportSynthesisLLM",
+    "EvaluationLLM",
 ]
