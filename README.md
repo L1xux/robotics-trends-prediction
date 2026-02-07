@@ -2,11 +2,11 @@
 
 로보틱스 트렌드 분석 보고서를 자동 생성하는 AI 프로그램입니다.
 
-## 기술 스택
+## 기술
 
 ### 핵심 프레임워크
 - **Python 3.11+**
-- **LangChain / LangGraph / LangSmith**
+- **LangChain / LangGraph**
 - **OpenAI GPT-4o / GPT-4o-mini**
 
 ### 데이터 & 임베딩
@@ -262,6 +262,7 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
 
 
 
