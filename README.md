@@ -6,8 +6,8 @@
 
 ### 핵심 프레임워크
 - **Python 3.11+**
-- **LangChain / LangGraph** - Multi-Agent 오케스트레이션, 상태 관리
-- **OpenAI GPT-4o / GPT-4o-mini** - LLM 백엔드
+- **LangChain / LangGraph**
+- **OpenAI GPT-4o / GPT-4o-mini**
 
 ### 데이터 & 임베딩
 - **ArXiv API** - 학술 논문 검색
@@ -227,3 +227,4 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
