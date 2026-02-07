@@ -1,6 +1,6 @@
 # AI-Robotics Trend Analysis Report Generator
 
-본 프로젝트는 **Multi-Agent 시스템**을 활용하여 AI-Robotics 분야의 트렌드 분석 보고서를 자동으로 생성하는 LangGraph 기반 실습 프로젝트입니다.
+본 프로젝트는 **Multi-Agent 시스템**을 활용하여 AI-Robotics 분야의 트렌드 분석 보고서를 자동으로 생성하는 LangGraph 기반 프로젝트입니다.
 
 ## Overview
 
@@ -439,6 +439,7 @@ python scripts/run_pipeline.py --topic "Collaborative Robots in Manufacturing"
 
 **Version**: 1.0.0
 **Last Updated**: 2025-01-23
+
 
 
 
