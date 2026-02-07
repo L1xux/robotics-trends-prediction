@@ -1,6 +1,6 @@
 # Robotics Trends Prediction Pipeline
 
-로보틱스 트렌드 분석 보고서를 자동 생성하는 AI 시스템입니다.
+로보틱스 트렌드 분석 보고서를 자동 생성하는 AI 프로그램입니다.
 
 ## 기술 스택
 
@@ -227,4 +227,5 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
 
