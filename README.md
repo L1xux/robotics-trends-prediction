@@ -105,12 +105,11 @@ robotics-trends-prediction/
 │   │   │   └── agent_config.py              # 에이전트 설정
 │   │   ├── planning_agent.py                # 연구 계획 생성 (HITL)
 │   │   ├── data_collection_agent.py         # 데이터 수집 (ReAct)
-│   │   ├── writer_agent.py                  # 보고서 작성 및 리뷰 (ReAct)
-│   │   └── evaluation_agent.py              # Ragas 품질 평가
-│   ├── llms/                                # LLM 기반 모듈 (도구 없음)
+│   │   └── writer_agent.py                  # 보고서 작성 및 리뷰 (ReAct)
+│   ├── llms/                                # LLM 기반 모듈
 │   │   ├── content_analysis_llm.py          # 트렌드 분석 및 섹션 생성
 │   │   ├── report_synthesis_llm.py          # 요약 및 결론 작성
-│   │   └── revision_llm.py                  # (사용 안 함)
+│   │   └── evaluation_llm.py                # Ragas 품질 평가
 │   ├── tools/                               # LangChain 도구
 │   │   ├── base/
 │   │   │   ├── base_tool.py                 # 도구 베이스 클래스
@@ -262,6 +261,7 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
 
 
 
