@@ -27,7 +27,7 @@
     ↓
 ┌───────────────┐
 │ Planning      │  연구 계획 생성 및 사용자 승인
-│ Agent         │
+│ Agent         │  (Human in the Loop) 
 └───────────────┘
     ↓
 ┌───────────────┐
@@ -40,7 +40,7 @@ Content Analysis   │  트렌드 분석 및 섹션 생성
 Report Synthesis   │  요약 및 결론 작성
     ↓              │
 ┌───────────────┐  │
-│ Writer        │ ─┘  보고서 조립 및 사용자 리뷰 (ReAct)
+│ Writer        │ ─┘  보고서 조립 및 사용자 리뷰 (Human in the Loop, ReAct)
 │ Agent         │     - Revision: 보고서 수정
 └───────────────┘     - Recollection: 데이터 재수집
     ↓
@@ -259,6 +259,7 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
 
 
 
