@@ -5,10 +5,10 @@ RAG 및 News 수집 도구의 LangChain 호환 래퍼
 """
 
 import asyncio
-from typing import Optional, Type, List, Dict, Any
+from typing import Optional, Type, List, Dict, Any, Union
 from langchain.tools import BaseTool as LangChainBaseTool
 from langchain_core.callbacks import CallbackManagerForToolRun
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ============================================================
 # RAG Tool Wrapper
@@ -93,14 +93,34 @@ Use for: Future forecasts, Industry cases, Market trends."""
             return f"Error searching documents: {str(e)}"
 
 
-# ============================================================
-# News Crawler Tool Wrapper
-# ============================================================
+
+from typing import Union
 
 class NewsCrawlerInput(BaseModel):
     """Input schema for News Crawler Tool"""
-    keywords: str = Field(description="Comma-separated keywords to search for news articles")
+    keywords: Union[str, List[str]] = Field(
+        description="Keywords to search: either a list ['keyword1', 'keyword2'] or comma-separated string 'keyword1, keyword2'"
+    )
     max_articles: int = Field(default=50, description="Maximum number of articles to collect")
+    
+    @field_validator('keywords', mode='before')
+    @classmethod
+    def parse_keywords(cls, v):
+        """Parse keywords from various formats"""
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            try:
+                import json
+                parsed = json.loads(v)
+                if isinstance(parsed, dict) and "keywords" in parsed:
+                    return parsed["keywords"]
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, ValueError):
+                pass
+            return [k.strip() for k in v.split(",") if k.strip()]
+        return v
 
 
 class NewsCrawlerUtilWrapper(LangChainBaseTool):
@@ -123,7 +143,7 @@ Use for: Company announcements, Product launches, Market activity."""
     
     def _run(
         self,
-        keywords: str,
+        keywords: Union[str, List[str]],
         max_articles: int = 50,
         run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
@@ -139,13 +159,16 @@ Use for: Company announcements, Product launches, Market activity."""
     
     async def _arun(
         self,
-        keywords: str,
+        keywords: Union[str, List[str]],
         max_articles: int = 50,
         run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
         """Execute async news search"""
         try:
-            keyword_list = [k.strip().lower() for k in keywords.split(",") if k.strip()]
+            if isinstance(keywords, str):
+                keyword_list = [k.strip().lower() for k in keywords.split(",") if k.strip()]
+            else:
+                keyword_list = [k.strip().lower() for k in keywords if k.strip()]
             
             if not keyword_list:
                 return "Error: No valid keywords provided."

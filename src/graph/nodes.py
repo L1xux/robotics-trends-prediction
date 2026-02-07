@@ -8,6 +8,7 @@ from typing import Dict, Any, Callable
 from datetime import datetime
 from functools import partial, wraps
 import json
+import asyncio
 
 from typing import Dict, Callable, Any
 from src.agents.base.base_agent import BaseAgent
@@ -15,6 +16,7 @@ from src.agents.base.base_agent import BaseAgent
 
 from src.graph.state import PipelineState, WorkflowStatus
 from src.cli.human_review import ProgressDisplay, ReviewCLI
+from langchain_core.prompts import ChatPromptTemplate
 
 # Agents
 from src.agents.planning_agent import PlanningAgent
@@ -25,7 +27,6 @@ from src.agents.evaluation_agent import EvaluationAgent
 # LLMs
 from src.llms.content_analysis_llm import ContentAnalysisLLM
 from src.llms.report_synthesis_llm import ReportSynthesisLLM
-from src.llms.revision_llm import RevisionLLM
 
 # Utils
 from src.utils.refine_plan_util import RefinePlanUtil
@@ -263,6 +264,54 @@ async def end_node(
 
     progress.show_info("Workflow completed successfully")
 
+    async def translate_to_korean(english_report: str, llm) -> str:
+        sections = english_report.split("\n## ")
+        translated_sections = []
+
+        max_section_retries = 3
+        for i, section in enumerate(sections):
+            if i == 0:
+                chunk = section
+            else:
+                chunk = "## " + section
+
+            if len(chunk.strip()) < 10:
+                translated_sections.append(chunk)
+                continue
+
+            for attempt in range(max_section_retries):
+                try:
+                    prompt = ChatPromptTemplate.from_messages([
+                        ("system", """You are a professional Korean translator specializing in technical and business documents.
+
+Translate the following English markdown report to Korean while:
+1. Maintaining all markdown formatting (headers, lists, bold, italic, etc.)
+2. Keeping citation numbers [1], [2], etc. as-is
+3. Preserving technical terms when appropriate (e.g., AI, IoT, robotics)
+4. Using natural, professional Korean business language
+5. Keeping the document structure exactly the same
+
+Output ONLY the translated Korean markdown, nothing else."""),
+                        ("user", "{text}")
+                    ])
+
+                    chain = prompt | llm
+                    response = await chain.ainvoke({"text": chunk})
+
+                    translated = response.content if hasattr(response, 'content') else str(response)
+                    translated_sections.append(translated.strip())
+                    break
+
+                except Exception as e:
+                    print(f"  ❌ Translation error for section {i+1} (Attempt {attempt + 1}/{max_section_retries}): {e}")
+                    if attempt < max_section_retries - 1:
+                        await asyncio.sleep(2)
+                    else:
+                        print(f"  ❌ All retries failed for section {i+1}. Using original English text for this section.")
+                        translated_sections.append(chunk)
+
+        return "\n\n".join(translated_sections)
+
     try:
         english_report = state.get("final_report", "")
         if not english_report:
@@ -270,10 +319,9 @@ async def end_node(
             state.update({"status": "workflow_complete", "updated_at": datetime.now().isoformat()})
             return state
 
-        # Translate
         print("\nTranslating to Korean...")
         try:
-            korean_report = await writer_agent._translate_to_korean(english_report)
+            korean_report = await translate_to_korean(english_report, writer_agent.llm)
             print("Translation complete")
             state["final_report_korean"] = korean_report
         except Exception as e:
@@ -357,13 +405,11 @@ def bind_nodes(
     """
     
     return {
-        # Agents -> Nodes
-        "planning": planning_agent.execute,
+        "planning": partial(planning_node, planning_agent=planning_agent, refine_plan_tool=refine_plan_tool),
         "data_collection": data_collection_agent.execute,
         "content_analysis": content_analysis_agent.execute,
         "report_synthesis": report_synthesis_agent.execute,
         "writer": writer_agent.execute,
-        # Tools -> Nodes
         "refine_plan": refine_plan_tool.run,
         "feedback_classifier": feedback_classifier_tool.run
     }

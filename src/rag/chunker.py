@@ -21,13 +21,13 @@ class SemanticChunker:
         self.chunk_overlap = chunk_overlap
         # 빈 문자열("") 제거, 큰 단위 -> 작은 단위 우선순위
         self.separators = separators or [
-            "\n\n\n",  # 큰 섹션 구분
-            "\n\n",    # 단락 구분
-            "\n",      # 줄바꿈
-            ". ",      # 문장 끝
+            "\n\n\n",  
+            "\n\n",    
+            "\n",      
+            ". ",      
             "! ",
             "? ",
-            " ",       # 단어 구분
+            " ",       
         ]
     
     def chunk(self, document: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -86,7 +86,6 @@ class SemanticChunker:
                         if current.strip():
                             out.append(current.strip())
                         # 새로 시작해야 하는 piece가 너무 크면,
-                        # 더 미세한 분리자(i+1)로 재귀 분할
                         if len(piece_plus) > self.chunk_size:
                             out.extend(self._split_text(piece_plus, start_sep_idx=i+1))
                             current = ""
@@ -101,7 +100,7 @@ class SemanticChunker:
                 if out:
                     return out
 
-        # 모든 분리자에서 규격화 실패 → 강제 슬라이싱 (overlap 적용)
+        # 모든 분리자에서 규격화 실패, 강제 슬라이싱 (overlap 적용)
         return self._force_slice(t)
 
     def _force_slice(self, text: str) -> List[str]:

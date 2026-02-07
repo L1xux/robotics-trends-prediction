@@ -5,6 +5,7 @@ LangGraph Workflow (Clean Architecture with Design Patterns)
 """
 
 from typing import Optional, Dict, Any
+from functools import partial
 from langgraph.graph import StateGraph, START, END
 from datetime import datetime
 from dotenv import load_dotenv
@@ -12,7 +13,7 @@ from langchain_openai import ChatOpenAI
 
 # Core
 from src.graph.state import PipelineState, create_initial_state
-from src.graph.nodes import bind_nodes
+from src.graph.nodes import bind_nodes, end_node
 from src.graph.edges import route_after_writer
 from src.core.settings import get_settings
 from src.agents.base.agent_config import AgentConfig
@@ -26,7 +27,6 @@ from src.agents.writer_agent import WriterAgent
 # LLMs
 from src.llms.content_analysis_llm import ContentAnalysisLLM
 from src.llms.report_synthesis_llm import ReportSynthesisLLM
-from src.llms.revision_llm import RevisionLLM
 
 # Utils
 from src.utils.planning_util import PlanningUtil, ResearchPlanningUtil
@@ -53,7 +53,7 @@ class WorkflowBuilder:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-4o-mini",
+        model: str = "gpt-4o",
         temperature: float = 0.0
     ):
         self.settings = get_settings()
@@ -200,6 +200,9 @@ class WorkflowBuilder:
         for node_name, node_func in nodes.items():
             workflow.add_node(node_name, node_func)
 
+        end_node_with_agent = partial(end_node, writer_agent=agents['writer'])
+        workflow.add_node("end", end_node_with_agent)
+
         # Define Edges
         workflow.add_edge(START, "planning")
         workflow.add_edge("planning", "data_collection")
@@ -211,11 +214,13 @@ class WorkflowBuilder:
             "writer",
             route_after_writer,
             {
-                "end": END,  # 작성 완료 시 종료
+                "end": "end",
                 "writer": "writer",
                 "data_collection": "data_collection"
             }
         )
+        
+        workflow.add_edge("end", END)
         
         return workflow.compile()
 
@@ -226,7 +231,7 @@ class WorkflowManager:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-4o-mini",
+        model: str = "gpt-4o",
         temperature: float = 0.0
     ):
         self.builder = WorkflowBuilder(api_key, model, temperature)
@@ -265,9 +270,9 @@ class WorkflowManager:
         except Exception as e:
             return None
 
-def create_workflow_manager(api_key=None, model="gpt-4o-mini", temperature=0.0):
+def create_workflow_manager(api_key=None, model="gpt-4o", temperature=0.0):
     return WorkflowManager(api_key, model, temperature)
 
-async def run_report_generation(user_input, api_key=None, model="gpt-4o-mini", temperature=0.0, config=None):
+async def run_report_generation(user_input, api_key=None, model="gpt-4o", temperature=0.0, config=None):
     manager = create_workflow_manager(api_key, model, temperature)
     return await manager.run_workflow(user_input, config=config)

@@ -67,7 +67,7 @@ async def run_pipeline_async(user_input: str):
             settings = Settings()
             
             eval_llm = ChatOpenAI(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 temperature=0,
                 api_key=settings.openai_api_key 
             )
@@ -75,7 +75,7 @@ async def run_pipeline_async(user_input: str):
             eval_config = AgentConfig(
                 name="PostRunEvaluator",
                 description="Evaluate the final report quality",
-                model_name="gpt-4o"
+                model_name="gpt-4o-mini"
             )
 
             eval_agent = EvaluationAgent(

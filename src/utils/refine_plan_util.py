@@ -6,11 +6,18 @@ import json
 from typing import Dict, Any
 from langchain.tools import BaseTool as LangChainBaseTool
 from langchain_core.tools import ToolException
-from pydantic import Field
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
+from pydantic import BaseModel, Field
 
 from src.core.models.planning_model import PlanningOutput
 from src.cli.human_review import ReviewCLI
 from src.utils.planning_util import ResearchPlanningUtil
+
+
+class ApprovalDecision(BaseModel):
+    """Approval decision output schema"""
+    is_approved: bool = Field(description="True if user approves the plan, False if user wants changes")
 
 
 class RefinePlanUtil(LangChainBaseTool):
@@ -40,6 +47,12 @@ This tool will:
     
     refinement_tool: ResearchPlanningUtil = Field(description="Refinement tool")
     review_cli: ReviewCLI = Field(default_factory=ReviewCLI, description="Review CLI")
+    approval_llm: Any = Field(default=None, exclude=True, description="LLM for approval checking")
+    
+    def __init__(self, refinement_tool: ResearchPlanningUtil, **kwargs):
+        super().__init__(refinement_tool=refinement_tool, **kwargs)
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        object.__setattr__(self, 'approval_llm', llm.with_structured_output(ApprovalDecision))
     
     def _run(self, initial_plan: Dict[str, Any], max_attempts: int = 10) -> str:
         """
@@ -90,7 +103,10 @@ This tool will:
                     continue
                 
                 # Check approval
-                if self._is_approval(feedback):
+                is_approved = await self._is_approval(feedback)
+                print(f"\n🔍 Checking approval: '{feedback}' -> {is_approved}")
+                
+                if is_approved:
                     print(f"\n✅ Plan approved!")
                     final_plan_dict = current_plan.model_dump()
                     return json.dumps(final_plan_dict, ensure_ascii=False)
@@ -129,23 +145,53 @@ This tool will:
         except Exception as e:
             raise ToolException(f"Error in refine_plan_tool: {str(e)}")
     
-    def _is_approval(self, feedback: str) -> bool:
+    async def _is_approval(self, feedback: str) -> bool:
         """
-        피드백이 승인인지 확인
+        하이브리드 승인 판단: 규칙 우선, 애매한 경우 LLM 사용
         """
         feedback_lower = feedback.lower().strip()
         
-        approval_keywords = [
-            # English
-            "approve", "accept", "ok", "okay", "good", "great", "perfect",
-            "yes", "y", "fine", "looks good", "looks great", "proceed",
-            "continue", "go ahead", "let's go", "lgtm",
-            # Korean
+        clear_approval = [
+            "ok", "okay", "yes", "approve", "approved", "accept", "accepted",
+            "good", "great", "perfect", "fine", "proceed", "continue",
+            "lgtm", "looks good", "sounds good",
             "좋아요", "좋아", "괜찮아요", "괜찮아", "완벽해요", "완벽해",
-            "이대로", "진행", "승인", "확인", "네", "예", "오케이", "오키"
+            "네", "예", "승인", "확인", "진행", "오케이"
         ]
         
-        return any(keyword in feedback_lower for keyword in approval_keywords)
+        if feedback_lower in clear_approval:
+            return True
+        
+        return await self._is_approval_llm(feedback)
+    async def _is_approval_llm(self, feedback: str) -> bool:
+        try:
+            system_prompt = """You are a feedback classifier. Analyze user feedback and determine if it indicates approval or rejection.
+
+Approval means:
+- User is satisfied with the plan
+- User wants to proceed without changes
+- Examples: "ok", "good", "looks great", "approve", "yes", "fine", "proceed"
+
+Rejection means:
+- User wants changes or improvements
+- User provides specific feedback or modifications
+- Examples: "change X", "add more Y", "reduce Z", "needs improvement"
+
+Set is_approved to true for approval, false for rejection."""
+
+            user_prompt = f'User feedback: "{feedback}"'
+            
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt)
+            ]
+            
+            result: ApprovalDecision = await self.approval_llm.ainvoke(messages)
+            
+            return result.is_approved
+        except Exception as e:
+            print(f"⚠️ LLM approval check failed: {e}")
+            return False
 
 
 
