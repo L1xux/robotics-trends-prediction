@@ -82,7 +82,7 @@ Evaluation           Ragas 품질 평가
 
 ### 5. Writer Agent
 - 모든 섹션을 최종 보고서로 조립
-- 품질 검사 수행
+- 유저로부터 품질 검사 수행
 - **Feedback Classifier Tool**: 사용자 피드백을 "revision", "recollection", "approved"로 분류
 - **Revision Tool**: 보고서 내용 수정 (Writer 내에서 처리)
 - **Recollection Tool**: 데이터 재수집 필요 시 Data Collection Agent로 라우팅
@@ -262,6 +262,7 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
 
 
 
