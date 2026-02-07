@@ -77,14 +77,12 @@ Evaluation           Ragas 품질 평가
 
 ### 4. Report Synthesis LLM
 - 경영진 요약 생성
-- 서론 섹션 작성
-- 전략적 권고사항이 포함된 결론 작성
+- 서론, 본론, 결론 등 섹션마다 내용물 작성
 - 참고문헌 및 부록 컴파일
 
 ### 5. Writer Agent
 - 모든 섹션을 최종 보고서로 조립
 - 품질 검사 수행
-- ReAct 에이전트를 통한 사용자 피드백 처리
 - **Feedback Classifier Tool**: 사용자 피드백을 "revision", "recollection", "approved"로 분류
 - **Revision Tool**: 보고서 내용 수정 (Writer 내에서 처리)
 - **Recollection Tool**: 데이터 재수집 필요 시 Data Collection Agent로 라우팅
@@ -101,50 +99,87 @@ Evaluation           Ragas 품질 평가
 ```
 robotics-trends-prediction/
 ├── src/
-│   ├── agents/              # 에이전트 구현
+│   ├── agents/
+│   │   ├── base/
+│   │   │   ├── base_agent.py
+│   │   │   └── agent_config.py
 │   │   ├── planning_agent.py
 │   │   ├── data_collection_agent.py
 │   │   ├── writer_agent.py
 │   │   └── evaluation_agent.py
-│   ├── llms/                # LLM 기반 모듈
+│   ├── llms/
 │   │   ├── content_analysis_llm.py
-│   │   └── report_synthesis_llm.py
-│   ├── tools/               # 데이터 수집 도구
+│   │   ├── report_synthesis_llm.py
+│   │   └── revision_llm.py
+│   ├── tools/
+│   │   ├── base/
+│   │   │   ├── base_tool.py
+│   │   │   └── tool_config.py
 │   │   ├── arxiv_tool.py
 │   │   ├── rag_tool.py
 │   │   ├── news_crawler_tool.py
 │   │   ├── revision_tool.py
 │   │   └── recollection_tool.py
-│   ├── utils/               # 유틸리티 함수 및 래퍼
+│   ├── utils/
 │   │   ├── planning_util.py
 │   │   ├── refine_plan_util.py
-│   │   └── data_collect_util.py
-│   ├── graph/               # LangGraph 워크플로우
-│   │   ├── workflow.py      # 워크플로우 빌더 및 매니저
-│   │   ├── nodes.py         # 노드 구현
-│   │   ├── edges.py         # 라우팅 로직
-│   │   └── state.py         # 공유 상태 정의
-│   ├── core/                # 핵심 모델 및 설정
-│   │   ├── settings.py
-│   │   └── models/
-│   ├── document/            # 문서 생성
+│   │   ├── data_collect_util.py
+│   │   ├── feedback_classifier_util.py
+│   │   ├── rag_utils.py
+│   │   ├── file_utils.py
+│   │   ├── logger.py
+│   │   └── error_handler.py
+│   ├── graph/
+│   │   ├── workflow.py
+│   │   ├── nodes.py
+│   │   ├── edges.py
+│   │   └── state.py
+│   ├── core/
+│   │   ├── models/
+│   │   │   ├── planning_model.py
+│   │   │   ├── data_collection_model.py
+│   │   │   ├── citation_model.py
+│   │   │   ├── quality_check_model.py
+│   │   │   ├── revision_model.py
+│   │   │   └── trend_model.py
+│   │   ├── patterns/
+│   │   │   ├── base_model.py
+│   │   │   └── singleton.py
+│   │   └── settings.py
+│   ├── rag/
+│   │   ├── pipeline.py
+│   │   ├── loader.py
+│   │   ├── chunker.py
+│   │   ├── embedder.py
+│   │   └── indexer.py
+│   ├── document/
 │   │   ├── docx_generator.py
 │   │   └── pdf_converter.py
-│   └── cli/                 # 커맨드라인 인터페이스
+│   └── cli/
 │       └── human_review.py
 ├── scripts/
-│   ├── run_pipeline.py      # 메인 파이프라인 실행기
-│   └── indexer_builder.py   # RAG 인덱스 빌더
+│   ├── run_pipeline.py
+│   └── indexer_builder.py
 ├── config/
 │   ├── app_config.yaml
-│   └── prompts/             # 프롬프트 템플릿
+│   └── prompts/
+│       ├── analysis_prompts.py
+│       ├── synthesis_prompts.py
+│       └── data_collections_prompts.py
 ├── data/
-│   ├── raw/                 # 수집된 데이터
-│   ├── processed/           # 처리된 데이터
-│   ├── reports/             # 생성된 보고서
-│   ├── chroma_db/           # 벡터 데이터베이스
-│   └── logs/                # 파이프라인 로그
-└── reference_docs/          # RAG용 참조 문서
+│   ├── raw/
+│   ├── processed/
+│   ├── reports/
+│   ├── chroma_db/
+│   └── logs/
+├── reference_docs/
+│   ├── FTSG.pdf
+│   └── WEF.pdf
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── requirements.txt
+└── README.md
 ```
 
 ## 사용법
@@ -227,5 +262,6 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
 
 
