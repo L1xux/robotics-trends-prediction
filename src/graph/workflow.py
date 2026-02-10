@@ -248,7 +248,7 @@ class WorkflowManager:
         config: Optional[dict] = None
     ) -> PipelineState:
         print(f"\n{'='*60}")
-        print(f"🚀 AI-Robotics Report Generator")
+        print(f"AI-Robotics Report Generator")
         print(f"{'='*60}\n")
         print(f"Topic: {user_input}")
         
@@ -257,10 +257,10 @@ class WorkflowManager:
 
         try:
             final_state = await workflow.ainvoke(initial_state, config=config)
-            print(f"\n✅ Workflow Completed!")
+            print(f"\nWorkflow Completed!")
             return final_state
         except Exception as e:
-            print(f"\n❌ Workflow Failed: {str(e)}")
+            print(f"\nWorkflow Failed: {str(e)}")
             raise
 
     def visualize_workflow(self) -> str:

@@ -92,12 +92,12 @@ class DocxGenerator:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             doc.save(str(output_path))
             
-            print(f"✅ DOCX generated: {output_path}")
+            print(f"DOCX generated: {output_path}")
             
             return str(output_path)
         
         except Exception as e:
-            print(f"❌ DOCX generation failed: {e}")
+            print(f"DOCX generation failed: {e}")
             raise
     
     def _clean_markdown(self, text: str) -> str:

@@ -112,7 +112,7 @@ class NewsCrawlerTool(BaseTool):
                 unique_sources = len(set(article['source'] for article in filtered_articles))
                 
                 # 결과 요약 출력
-                print(f"\n   📊 [News] Collection Summary:")
+                print(f"\n   [News] Collection Summary:")
                 print(f"       Total collected: {len(all_articles)} articles")
                 print(f"       After deduplication: {len(unique_articles)} articles")
                 print(f"       After date filter: {len(filtered_articles)} articles")
@@ -130,10 +130,10 @@ class NewsCrawlerTool(BaseTool):
                         )
                         citations.append(citation)
                     except Exception as e:
-                        print(f"       ⚠️  Citation 생성 실패: {str(e)[:100]}")
+                        print(f"       Citation 생성 실패: {str(e)[:100]}")
                         continue
                 
-                print(f"       📚 Citations created: {len(citations)}")
+                print(f"       Citations created: {len(citations)}")
                 
                 return {
                     "keywords": keywords,
@@ -174,16 +174,16 @@ class NewsCrawlerTool(BaseTool):
         articles = []
         
         try:
-            print(f"   🔍 [News] Searching keyword: '{keyword}'")
+            print(f"   [News] Searching keyword: '{keyword}'")
             
             # GNews 검색
             results = self.gnews.get_news(keyword)
             
             if not results:
-                print(f"   ⚠️  [News] No results for '{keyword}'")
+                print(f"   [News] No results for '{keyword}'")
                 return []
             
-            print(f"   📰 [News] Found {len(results)} raw results for '{keyword}'")
+            print(f"   [News] Found {len(results)} raw results for '{keyword}'")
             
             # 소스별로 그룹화
             source_dict = {}
@@ -202,15 +202,15 @@ class NewsCrawlerTool(BaseTool):
                         formatted = self._format_article(article)
                         articles.append(formatted)
                     except Exception as format_error:
-                        print(f"   ⚠️  [News] Failed to format article: {format_error}")
+                        print(f"   [News] Failed to format article: {format_error}")
                         continue
             
-            print(f"   ✅ [News] Collected {len(articles)} articles from {len(source_dict)} sources for '{keyword}'")
+            print(f"   [News] Collected {len(articles)} articles from {len(source_dict)} sources for '{keyword}'")
             
             return articles
         
         except Exception as e:
-            print(f"   ❌ [News] Failed to fetch news for keyword '{keyword}': {e}")
+            print(f"   [News] Failed to fetch news for keyword '{keyword}': {e}")
             import traceback
             print(f"   📜 [News] Traceback: {traceback.format_exc()}")
             return []
@@ -371,7 +371,7 @@ class NewsCrawlerTool(BaseTool):
                 "keywords_searched": int
             }
         """
-        print(f"\n📰 병렬 뉴스 수집 시작: {len(keywords)}개 키워드")
+        print(f"\n병렬 뉴스 수집 시작: {len(keywords)}개 키워드")
         
         # ThreadPoolExecutor로 병렬 수집
         loop = asyncio.get_event_loop()
@@ -410,7 +410,7 @@ class NewsCrawlerTool(BaseTool):
             reverse=True
         )
         
-        print(f"   ✅ 총 {len(all_articles)}개 기사 수집 완료 (중복 제거 후)")
+        print(f"   총 {len(all_articles)}개 기사 수집 완료 (중복 제거 후)")
         
         # Citations 생성
         citations = []
@@ -424,10 +424,10 @@ class NewsCrawlerTool(BaseTool):
                 )
                 citations.append(citation)
             except Exception as e:
-                print(f"   ⚠️ Citation 생성 실패: {str(e)[:100]}")
+                print(f"   Citation 생성 실패: {str(e)[:100]}")
                 continue
         
-        print(f"   📚 Citations created: {len(citations)}")
+        print(f"   Citations created: {len(citations)}")
         
         return {
             "articles": all_articles,
@@ -451,7 +451,7 @@ class NewsCrawlerTool(BaseTool):
         Returns:
             기사 리스트
         """
-        print(f"   🔍 '{keyword}' 수집 중...")
+        print(f"   '{keyword}' 수집 중...")
         
         try:
             # GNews period 설정

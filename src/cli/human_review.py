@@ -143,7 +143,7 @@ class ReviewCLI:
         # 제목
         self.console.print(
             Panel.fit(
-                "[bold magenta]📄 Final Report Review[/bold magenta]",
+                "[bold magenta]Final Report Review[/bold magenta]",
                 border_style="magenta"
             )
         )
@@ -392,7 +392,7 @@ class ProgressDisplay:
     def show_info(self, info_message: str):
         """정보 표시"""
         self.console.print(
-            f"[bold blue]ℹ[/bold blue] {info_message}"
+            f"[bold blue]{info_message}[/bold blue]"
         )
 
 

@@ -299,15 +299,25 @@ Output ONLY the translated Korean markdown, nothing else."""),
                     response = await chain.ainvoke({"text": chunk})
 
                     translated = response.content if hasattr(response, 'content') else str(response)
-                    translated_sections.append(translated.strip())
+                    translated = translated.strip()
+                    
+                    if translated.startswith("```markdown"):
+                        translated = translated[len("```markdown"):].strip()
+                    elif translated.startswith("```"):
+                        translated = translated[3:].strip()
+                    
+                    if translated.endswith("```"):
+                        translated = translated[:-3].strip()
+                    
+                    translated_sections.append(translated)
                     break
 
                 except Exception as e:
-                    print(f"  ❌ Translation error for section {i+1} (Attempt {attempt + 1}/{max_section_retries}): {e}")
+                    print(f"  Translation error for section {i+1} (Attempt {attempt + 1}/{max_section_retries}): {e}")
                     if attempt < max_section_retries - 1:
                         await asyncio.sleep(2)
                     else:
-                        print(f"  ❌ All retries failed for section {i+1}. Using original English text for this section.")
+                        print(f"  All retries failed for section {i+1}. Using original English text for this section.")
                         translated_sections.append(chunk)
 
         return "\n\n".join(translated_sections)
@@ -315,7 +325,7 @@ Output ONLY the translated Korean markdown, nothing else."""),
     try:
         english_report = state.get("final_report", "")
         if not english_report:
-            progress.show_warning("⚠️ No report content")
+            progress.show_warning("No report content")
             state.update({"status": "workflow_complete", "updated_at": datetime.now().isoformat()})
             return state
 
@@ -334,13 +344,13 @@ Output ONLY the translated Korean markdown, nothing else."""),
         folder_name = state.get("folder_name", "report_output")
         output_dir = f"data/reports/{folder_name}"
 
-        print(f"\n{'='*60}\n📄 Generating Documents\n{'='*60}\n")
+        print(f"\n{'='*60}\nGenerating Documents\n{'='*60}\n")
 
         # DOCX
         from src.document.docx_generator import generate_docx
 
         docx_path = f"{output_dir}/final_report_korean.docx"
-        print("📝 Generating DOCX...")
+        print("Generating DOCX...")
 
         try:
             docx_file = generate_docx(
@@ -349,7 +359,7 @@ Output ONLY the translated Korean markdown, nothing else."""),
                 title=state.get("user_input", "AI-Robotics Trend Report")
             )
             state["docx_path"] = docx_file
-            print(f"✅ DOCX saved: {docx_file}\n")
+            print(f"DOCX saved: {docx_file}\n")
         except Exception as e:
             progress.show_error(f"DOCX failed: {e}")
             docx_file = None
@@ -359,17 +369,17 @@ Output ONLY the translated Korean markdown, nothing else."""),
             from src.document.pdf_converter import convert_to_pdf
 
             pdf_path = f"{output_dir}/final_report_korean.pdf"
-            print("📄 Generating PDF...")
+            print("Generating PDF...")
 
             try:
                 pdf_file = convert_to_pdf(docx_path=docx_file, pdf_path=pdf_path)
                 state["pdf_path"] = pdf_file
-                print(f"✅ PDF saved: {pdf_file}\n")
+                print(f"PDF saved: {pdf_file}\n")
             except Exception as e:
                 progress.show_error(f"PDF failed: {e}")
                 state["pdf_path"] = docx_file
 
-        print(f"{'='*60}\n✅ Documents generated!\n{'='*60}\n")
+        print(f"{'='*60}\nDocuments generated!\n{'='*60}\n")
 
     except Exception as e:
         progress.show_error(f"Document generation error: {e}")

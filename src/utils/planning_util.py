@@ -118,7 +118,7 @@ class PlanningUtil(BaseTool):
         """
         초기 계획 생성 (비동기)
         """
-        print(f"\n🎯 PlanningTool: Creating initial plan for '{topic}'...")
+        print(f"\nPlanningTool: Creating initial plan for '{topic}'...")
         
         try:
             # 프롬프트 구성
@@ -137,13 +137,13 @@ class PlanningUtil(BaseTool):
             # JSON 파싱
             plan = self._parse_json_response(response_text)
             
-            print(f"✅ PlanningTool: Initial plan created successfully")
+            print(f"PlanningTool: Initial plan created successfully")
             
             # JSON 문자열로 반환
             return json.dumps(plan, ensure_ascii=False)
         
         except Exception as e:
-            print(f"❌ PlanningTool failed: {e}")
+            print(f"PlanningTool failed: {e}")
             raise
     
     def _build_system_prompt(self) -> str:

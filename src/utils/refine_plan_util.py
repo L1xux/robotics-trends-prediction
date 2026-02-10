@@ -86,7 +86,7 @@ This tool will:
             # Human Review Loop
             for attempt in range(1, max_attempts + 1):
                 print(f"\n{'='*60}")
-                print(f"📝 Review Attempt {attempt}/{max_attempts}")
+                print(f"Review Attempt {attempt}/{max_attempts}")
                 print(f"{'='*60}\n")
                 
                 # Display plan
@@ -94,26 +94,26 @@ This tool will:
                 self.review_cli.display_plan(current_plan_dict)
                 
                 # Get feedback (직접 input 사용)
-                print(f"\n💬 Review the plan (attempt {attempt}/{max_attempts}):")
+                print(f"\nReview the plan (attempt {attempt}/{max_attempts}):")
                 print("(Type your feedback or approval keywords like 'ok', 'approve', '좋아요', etc.)")
                 feedback = input("\nYour feedback: ").strip()
                 
                 if not feedback:
-                    print("⚠️  Empty feedback. Please provide feedback or approval.")
+                    print("Empty feedback. Please provide feedback or approval.")
                     continue
                 
                 # Check approval
                 is_approved = await self._is_approval(feedback)
-                print(f"\n🔍 Checking approval: '{feedback}' -> {is_approved}")
+                print(f"\nChecking approval: '{feedback}' -> {is_approved}")
                 
                 if is_approved:
-                    print(f"\n✅ Plan approved!")
+                    print(f"\nPlan approved!")
                     final_plan_dict = current_plan.model_dump()
                     return json.dumps(final_plan_dict, ensure_ascii=False)
                 
                 # Refine plan
-                print(f"\n🔧 Refining plan based on feedback...")
-                print(f"📝 Feedback: {feedback}\n")
+                print(f"\nRefining plan based on feedback...")
+                print(f"Feedback: {feedback}\n")
                 
                 current_plan_dict = current_plan.model_dump()
                 user_topic = current_plan.topic
@@ -132,7 +132,7 @@ This tool will:
                 
                 # Validate
                 current_plan = PlanningOutput(**improved_plan_data)
-                print(f"✅ Plan refined!\n")
+                print(f"Plan refined!\n")
             
             # Max attempts reached
             raise ToolException(
@@ -190,7 +190,7 @@ Set is_approved to true for approval, false for rejection."""
             
             return result.is_approved
         except Exception as e:
-            print(f"⚠️ LLM approval check failed: {e}")
+            print(f"LLM approval check failed: {e}")
             return False
 
 

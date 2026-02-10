@@ -51,7 +51,7 @@ Use for: Future forecasts, Industry cases, Market trends."""
             query_normalized = query.lower().strip()
             
             if query_normalized in self.used_queries:
-                return f"⚠️ Already searched for '{query}'. Please try different keywords."
+                return f"Already searched for '{query}'. Please try different keywords."
             
             self.used_queries.add(query_normalized)
             
@@ -178,7 +178,7 @@ Use for: Company announcements, Product launches, Market activity."""
             for used_set in self.used_keyword_sets:
                 overlap = len(keyword_set & used_set) / max(len(keyword_set), len(used_set))
                 if overlap >= 0.5:
-                    return f"⚠️ Already searched with similar keywords: {', '.join(used_set)}."
+                    return f"Already searched with similar keywords: {', '.join(used_set)}."
             
             self.used_keyword_sets.append(keyword_set)
             

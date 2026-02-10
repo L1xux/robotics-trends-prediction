@@ -199,7 +199,7 @@ Return ONLY the Conclusion in Markdown format (start with "## 6. Conclusion").""
         Execute Report Synthesis
         """
         print(f"\n{'='*60}")
-        print(f"🎨 Report Synthesis Agent (English Only)")
+        print(f"Report Synthesis Agent (English Only)")
         print(f"{'='*60}\n")
         
         # Get input from ContentAnalysisAgent
@@ -227,10 +227,10 @@ Return ONLY the Conclusion in Markdown format (start with "## 6. Conclusion").""
         
         try:
             # Generate sections concurrently
-            print("📝 Generating Summary, Introduction, Conclusion (in English)...\n")
+            print("Generating Summary, Introduction, Conclusion (in English)...\n")
             
             # Summary
-            print("   🔹 Generating Executive Summary...")
+            print("   Generating Executive Summary...")
             summary = await self.summary_chain.ainvoke({
                 "section_2": section_2,
                 "section_3": section_3,
@@ -238,20 +238,22 @@ Return ONLY the Conclusion in Markdown format (start with "## 6. Conclusion").""
                 "section_5": section_5,
                 "key_trends": key_trends
             })
-            print("   ✅ Executive Summary generated\n")
+            summary = self._remove_markdown_wrapper(summary)
+            print("   Executive Summary generated\n")
             
             # Introduction
-            print("   🔹 Generating Introduction...")
+            print("   Generating Introduction...")
             section_1 = await self.intro_chain.ainvoke({
                 "topic": topic,
                 "arxiv_count": arxiv_count,
                 "rag_count": rag_count,
                 "news_count": news_count
             })
-            print("   ✅ Introduction generated\n")
+            section_1 = self._remove_markdown_wrapper(section_1)
+            print("   Introduction generated\n")
             
             # Conclusion
-            print("   🔹 Generating Conclusion...")
+            print("   Generating Conclusion...")
             section_6 = await self.conclusion_chain.ainvoke({
                 "section_2": section_2,
                 "section_3": section_3,
@@ -259,17 +261,18 @@ Return ONLY the Conclusion in Markdown format (start with "## 6. Conclusion").""
                 "section_5": section_5,
                 "key_trends": key_trends
             })
-            print("   ✅ Conclusion generated\n")
+            section_6 = self._remove_markdown_wrapper(section_6)
+            print("   Conclusion generated\n")
             
             # Generate References
-            print("   🔹 Generating References...")
+            print("   Generating References...")
             references = self._generate_references(citations)
-            print(f"   ✅ References generated ({len(citations)} citations)\n")
+            print(f"   References generated ({len(citations)} citations)\n")
             
             # Generate Appendix
-            print("   🔹 Generating Appendix...")
+            print("   Generating Appendix...")
             appendix = self._generate_appendix(trends, arxiv_count, rag_count, news_count)
-            print("   ✅ Appendix generated\n")
+            print("   Appendix generated\n")
             
             # Update state
             state["summary"] = summary
@@ -278,8 +281,8 @@ Return ONLY the Conclusion in Markdown format (start with "## 6. Conclusion").""
             state["references"] = references
             state["appendix"] = appendix
             
-            print(f"✅ Report Synthesis Complete!")
-            print(f"\n📊 Summary:")
+            print(f"Report Synthesis Complete!")
+            print(f"\nSummary:")
             print(f"   - Summary: {len(summary)} chars")
             print(f"   - Introduction: {len(section_1)} chars")
             print(f"   - Conclusion: {len(section_6)} chars")
@@ -289,8 +292,22 @@ Return ONLY the Conclusion in Markdown format (start with "## 6. Conclusion").""
             return state
         
         except Exception as e:
-            print(f"❌ Error in ReportSynthesisAgent: {str(e)}")
+            print(f"Error in ReportSynthesisAgent: {str(e)}")
             raise
+    
+    def _remove_markdown_wrapper(self, text: str) -> str:
+        """Remove markdown code block wrapper from LLM response"""
+        text = text.strip()
+        
+        if text.startswith("```markdown"):
+            text = text[len("```markdown"):].strip()
+        elif text.startswith("```"):
+            text = text[3:].strip()
+        
+        if text.endswith("```"):
+            text = text[:-3].strip()
+        
+        return text
     
     def _combine_subsections(self, sections: Dict[str, str], section_prefix: str) -> str:
         """Combine subsections"""

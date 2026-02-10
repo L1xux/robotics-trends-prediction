@@ -42,7 +42,7 @@ class EvaluationLLM:
             self.ragas_llm = llm
 
     async def execute(self, state: PipelineState) -> PipelineState:
-        print(f"\n{'='*60}\n🔍 [EvaluationLLM] Starting Full-Context Evaluation\n{'='*60}")
+        print(f"\n{'='*60}\n[EvaluationLLM] Starting Full-Context Evaluation\n{'='*60}")
 
         try:
             question = state.get("user_input", "")
@@ -53,7 +53,7 @@ class EvaluationLLM:
                 state["evaluation_results"] = {"faithfulness": 0.0, "answer_relevancy": 0.0}
                 return state
             
-            print(f"   📄 Evaluating Report Length: {len(answer)} chars")
+            print(f"   Evaluating Report Length: {len(answer)} chars")
 
             rag_results = state.get("rag_results", {})
             contexts = self._extract_contexts(rag_results)
@@ -63,7 +63,7 @@ class EvaluationLLM:
                 state["evaluation_results"] = {"faithfulness": 0.0, "answer_relevancy": 0.0}
                 return state
 
-            print(f"   📚 Using All Contexts: {len(contexts)} documents")
+            print(f"   Using All Contexts: {len(contexts)} documents")
 
             data_dict = {"question": [question], "answer": [answer], "contexts": [contexts]}
             dataset = Dataset.from_dict(data_dict)
@@ -82,7 +82,7 @@ class EvaluationLLM:
                         run_config=RunConfig(timeout=600, max_retries=2) 
                     )
                 except Exception as inner_e:
-                    print(f"   ⚠️ Ragas Internal Error: {inner_e}")
+                    print(f"   Ragas Internal Error: {inner_e}")
                     return None
 
             results = await asyncio.to_thread(run_ragas_sync)
@@ -90,9 +90,9 @@ class EvaluationLLM:
             scores = {}
             if results and hasattr(results, 'scores') and len(results.scores) > 0:
                 scores = results.scores[0]
-                print(f"   ✅ Success: F:{scores.get('faithfulness', 0):.2f}, R:{scores.get('answer_relevancy', 0):.2f}")
+                print(f"   Success: F:{scores.get('faithfulness', 0):.2f}, R:{scores.get('answer_relevancy', 0):.2f}")
             else:
-                print(f"   ⚠️ Empty results returned.")
+                print(f"   Empty results returned.")
 
             f_score = float(scores.get("faithfulness", 0.0) or 0.0)
             r_score = float(scores.get("answer_relevancy", 0.0) or 0.0)

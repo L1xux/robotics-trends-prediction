@@ -48,7 +48,7 @@ async def run_pipeline_async(user_input: str):
         Final pipeline state
     """
     print(f"\n{'='*60}")
-    print(f"🚀 Starting pipeline...")
+    print(f"Starting pipeline...")
     print(f"{'='*60}\n")
 
     # Create workflow manager
@@ -59,7 +59,7 @@ async def run_pipeline_async(user_input: str):
 
     if "final_report" in final_state and final_state["final_report"]:
         print(f"\n{'='*60}")
-        print(f"🔍 Starting Post-Pipeline Quality Evaluation (Ragas)")
+        print(f"Starting Post-Pipeline Quality Evaluation (Ragas)")
         print(f"{'='*60}")
         
         try:
@@ -79,11 +79,11 @@ async def run_pipeline_async(user_input: str):
             final_state = await evaluation_llm.execute(final_state)
             
         except Exception as e:
-            print(f"⚠️ Evaluation skipped due to error: {e}")
+            print(f"Evaluation skipped due to error: {e}")
             import traceback
             traceback.print_exc()
     else:
-        print("\n⚠️ No final report generated. Skipping evaluation.")
+        print("\nNo final report generated. Skipping evaluation.")
     # ------------------------------------------------------------------
 
     return final_state
@@ -109,60 +109,60 @@ def main():
     args = parser.parse_args()
 
     print("="*60)
-    print("🤖 Robotics Trends Prediction Pipeline")
+    print("Robotics Trends Prediction Pipeline")
     print("="*60)
 
     try:
         if args.topic:
             user_input = args.topic
-            print(f"\n📝 Topic: {user_input}")
+            print(f"\nTopic: {user_input}")
         else:
-            print("\n📝 Please enter your research topic:")
+            print("\nPlease enter your research topic:")
             print("   (e.g., 'humanoid robots in manufacturing')")
             print("   (Press Ctrl+C to exit)\n")
 
             user_input = input("Topic: ").strip()
 
             if not user_input:
-                print("❌ Empty topic. Exiting...")
+                print("Empty topic. Exiting...")
                 return
 
-        print(f"\n✅ Topic received: {user_input}")
+        print(f"\nTopic received: {user_input}")
 
         result = asyncio.run(run_pipeline_async(user_input))
 
         print(f"\n{'='*60}")
-        print(f"✅ Pipeline Complete!")
+        print(f"Pipeline Complete!")
         print(f"{'='*60}")
 
         if "planning_output" in result:
-            print(f"\n📋 Planning:")
+            print(f"\nPlanning:")
             print(f"   Topic: {result['planning_output'].normalized_topic}")
             print(f"   Keywords: {len(result['keywords'])} keywords")
 
         if "data_collection_status" in result:
             status = result["data_collection_status"]
             if hasattr(status, 'arxiv_count'):
-                print(f"\n📦 Data Collection:")
+                print(f"\nData Collection:")
                 print(f"   ArXiv: {status.arxiv_count} papers")
                 print(f"   RAG: {status.rag_count} documents")
                 print(f"   News: {status.news_count} articles")
                 print(f"   Quality: {status.quality_score:.2f}")
                 print(f"   Status: {status.status}")
             else:
-                print(f"\n📦 Data Collection Status: {status}")
+                print(f"\nData Collection Status: {status}")
 
         if "folder_name" in result:
-            print(f"\n💾 Data saved to: data/raw/{result['folder_name']}/")
+            print(f"\nData saved to: data/raw/{result['folder_name']}/")
 
         if "evaluation_results" in result:
             scores = result["evaluation_results"]
-            print(f"\n📊 Quality Scores:")
+            print(f"\nQuality Scores:")
             print(f"   • Faithfulness: {scores.get('faithfulness', 0.0):.2f}")
             print(f"   • Answer Relevancy: {scores.get('answer_relevancy', 0.0):.2f}")
 
         if "final_report" in result:
-            print(f"\n📄 Report Generated!")
+            print(f"\nReport Generated!")
             print(f"   Status: {result.get('status', 'unknown')}")
             
             # 리포트 파일로 저장 (선택 사항)
@@ -173,16 +173,16 @@ def main():
                     f.write(result["final_report"])
                 print(f"   Saved to file: {filename}")
             except Exception as e:
-                print(f"   ⚠️ Failed to save report file: {e}")
+                print(f"   Failed to save report file: {e}")
 
         print(f"\n{'='*60}\n")
     
     except KeyboardInterrupt:
-        print("\n\n⚠️ Pipeline interrupted by user. Exiting...")
+        print("\n\nPipeline interrupted by user. Exiting...")
         sys.exit(0)
     
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\nError: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

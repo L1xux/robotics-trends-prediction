@@ -137,15 +137,15 @@ class PlanningAgent(BaseAgent):
     def _log_start(self) -> None:
         """Log planning start"""
         print(f"\n{'='*60}")
-        print(f"🎯 Planning Agent 실행 중...")
+        print(f"Planning Agent 실행 중...")
         print(f"{'='*60}\n")
 
     def _log_completion(self, planning_output: PlanningOutput, folder_name: str) -> None:
         """Log planning completion"""
-        print(f"\n✅ Planning Agent 완료!")
-        print(f"📁 정규화된 주제: {planning_output.normalized_topic}")
-        print(f"📁 폴더명: {folder_name}")
-        print(f"🔑 키워드 개수: {len(planning_output.keywords)}")
+        print(f"\nPlanning Agent 완료!")
+        print(f"정규화된 주제: {planning_output.normalized_topic}")
+        print(f"폴더명: {folder_name}")
+        print(f"키워드 개수: {len(planning_output.keywords)}")
         print(f"{'='*60}\n")
     
     async def _create_initial_plan(self, user_topic: str) -> PlanningOutput:
@@ -158,13 +158,13 @@ class PlanningAgent(BaseAgent):
         Returns:
             PlanningOutput
         """
-        print(f"📝 주제: {user_topic}")
-        print(f"🔄 초기 계획 생성 중 (LLM + Tool)...\n")
+        print(f"주제: {user_topic}")
+        print(f"초기 계획 생성 중 (LLM + Tool)...\n")
 
         messages = [HumanMessage(content=PlanningPrompts.INITIAL_PLAN.format(topic=user_topic))]
 
         for iteration in range(self.MAX_ITERATIONS):
-            print(f"🔄 Iteration {iteration + 1}/{self.MAX_ITERATIONS}")
+            print(f"Iteration {iteration + 1}/{self.MAX_ITERATIONS}")
 
             response = await self._llm_with_tools.ainvoke(messages)
             messages.append(response)
@@ -181,23 +181,23 @@ class PlanningAgent(BaseAgent):
 
     def _handle_no_tool_call(self, response, messages: List) -> None:
         """Handle case when LLM doesn't call any tool"""
-        print(f"⚠️ LLM didn't call any tool. Response: {response.content[:100]}...")
-        print(f"🔄 Prompting LLM to use tool...\n")
+        print(f"LLM didn't call any tool. Response: {response.content[:100]}...")
+        print(f"Prompting LLM to use tool...\n")
         messages.append(HumanMessage(content=PlanningPrompts.RETRY_TOOL_USE))
 
     async def _execute_tool_calls(self, tool_calls: List, messages: List) -> Optional[PlanningOutput]:
         """Execute tool calls and return PlanningOutput if successful"""
         for tool_call in tool_calls:
-            print(f"🛠️ LLM calling tool: {tool_call['name']}")
+            print(f"LLM calling tool: {tool_call['name']}")
 
             tool = self._get_tool(tool_call['name'])
             if not tool:
-                print(f"❌ Tool '{tool_call['name']}' not found!")
+                print(f"Tool '{tool_call['name']}' not found!")
                 continue
 
             try:
                 planning_output = await self._execute_single_tool(tool, tool_call['args'])
-                print(f"✅ 초기 계획 생성 성공!\n")
+                print(f"초기 계획 생성 성공!\n")
                 return planning_output
 
             except Exception as e:
@@ -225,7 +225,7 @@ class PlanningAgent(BaseAgent):
     def _handle_tool_error(self, error: Exception, tool_call: Dict, messages: List) -> None:
         """Handle tool execution error"""
         error_msg = str(error)
-        print(f"❌ Tool execution failed: {error_msg}")
+        print(f"Tool execution failed: {error_msg}")
         messages.append(ToolMessage(
             content=f"Error: {error_msg}",
             tool_call_id=tool_call['id']

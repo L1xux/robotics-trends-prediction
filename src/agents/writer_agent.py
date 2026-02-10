@@ -132,14 +132,14 @@ New input: {{input}}
         Assemble final report and handle user feedback (English Only)
         """
         print(f"\n{'='*60}")
-        print(f"✍️  Writer Agent (ReAct - English Only)")
+        print(f"Writer Agent (ReAct - English Only)")
         print(f"{'='*60}\n")
 
         try:
             # Step 1: Assemble English Report (or use existing)
             if state.get("revision_count", 0) > 0 and state.get("final_report"):
                 final_report = state["final_report"]
-                print("\n📝 Using previously revised report for re-review.")
+                print("\nUsing previously revised report for re-review.")
             else:
                 final_report = self._assemble_report(state)
                 state["final_report"] = final_report
@@ -147,17 +147,17 @@ New input: {{input}}
 
             # Step 2: Show English Report to User
             print("\n" + "="*60)
-            print("📄 Final Report Draft")
+            print("Final Report Draft")
             print("="*60 + "\n")
 
             print(final_report)
 
             print("\n" + "="*60)
-            print("👤 Please review the full report above")
+            print("Please review the full report above")
             print("="*60 + "\n")
 
             # Step 3: Get User Feedback
-            print("💬 Your feedback:")
+            print("Your feedback:")
             print("   - Type 'ok', 'accept', 'good', 'approve' to accept the report")
             print("   - Or provide specific feedback for improvements")
             print()
@@ -166,26 +166,26 @@ New input: {{input}}
 
             # Empty feedback -> Treat as acceptance
             if not feedback:
-                print("\n⚠️  No feedback provided. Treating as acceptance.")
+                print("\nNo feedback provided. Treating as acceptance.")
                 state["status"] = WorkflowStatus.COMPLETED.value
                 state["review_feedback"] = None
                 return state
 
             # Evaluate Sentiment
-            print(f"\n🤖 Evaluating feedback sentiment...\n")
+            print(f"\nEvaluating feedback sentiment...\n")
 
             sentiment = await self._evaluate_feedback_sentiment(feedback)
 
             if sentiment == FeedbackSentiment.POSITIVE.value:
                 # User satisfied -> Accept Report
-                print("\n✅ Feedback indicates satisfaction - Report accepted!")
+                print("\nFeedback indicates satisfaction - Report accepted!")
                 state["status"] = WorkflowStatus.COMPLETED.value
                 state["review_feedback"] = None
                 return state
 
             # Negative Feedback -> Delegate to ReAct Agent
-            print(f"\n📝 Received feedback: {feedback[:150]}...")
-            print(f"🤖 ReAct Agent will analyze and choose tool...\n")
+            print(f"\nReceived feedback: {feedback[:150]}...")
+            print(f"ReAct Agent will analyze and choose tool...\n")
 
             if self._agent_executor:
                 agent_input = f"""Analyze the following user feedback and decide which tool to use.
@@ -204,7 +204,7 @@ Provide a brief reason for your choice."""
                 output = result.get("output", "No output from agent.")
                 intermediate_steps = result.get("intermediate_steps", [])
 
-                print(f"\n🤖 Agent Decision: {output}\n")
+                print(f"\nAgent Decision: {output}\n")
 
                 # Check which tool was actually used
                 action_taken = None
@@ -214,7 +214,7 @@ Provide a brief reason for your choice."""
 
                 if action_taken and action_taken.tool == "revise_report":
                     # RevisionTool Selected
-                    print(f"✅ Agent chose RevisionTool - Performing revision...")
+                    print(f"Agent chose RevisionTool - Performing revision...")
                     
                     revised_report = await self._perform_revision(final_report, feedback)
 
@@ -223,20 +223,20 @@ Provide a brief reason for your choice."""
                     state["review_feedback"] = None
                     state["revision_count"] = state.get("revision_count", 0) + 1
 
-                    print(f"✅ Revision complete (revision #{state['revision_count']})")
+                    print(f"Revision complete (revision #{state['revision_count']})")
 
                 elif action_taken and action_taken.tool == "recollect_data":
                     # RecollectionTool Selected
-                    print(f"✅ Agent chose RecollectionTool - Routing to data_collection_agent")
+                    print(f"Agent chose RecollectionTool - Routing to data_collection_agent")
 
                     state["status"] = WorkflowStatus.NEEDS_RECOLLECTION.value
                     state["review_feedback"] = feedback
 
-                    print(f"🔄 Workflow will route back to data collection")
+                    print(f"Workflow will route back to data collection")
 
                 else:
                     # Unclear or Default -> Revision
-                    print(f"⚠️  Unclear agent output, defaulting to revision")
+                    print(f"Unclear agent output, defaulting to revision")
 
                     revised_report = await self._perform_revision(final_report, feedback)
 
@@ -246,7 +246,7 @@ Provide a brief reason for your choice."""
                     state["revision_count"] = state.get("revision_count", 0) + 1
             else:
                 # No Executor -> Default Revision
-                print(f"⚠️  No agent executor, performing revision")
+                print(f"No agent executor, performing revision")
 
                 revised_report = await self._perform_revision(final_report, feedback)
 
@@ -258,7 +258,7 @@ Provide a brief reason for your choice."""
             return state
 
         except Exception as e:
-            print(f"❌ Error in WriterAgent: {str(e)}")
+            print(f"Error in WriterAgent: {str(e)}")
             import traceback
             traceback.print_exc()
             raise
@@ -324,14 +324,14 @@ Provide a brief reason for your choice."""
             response = await self.llm.ainvoke(messages)
             revised_report = response.content
 
-            print(f"✅ Revision complete")
+            print(f"Revision complete")
             print(f"   Original length: {len(current_report)} chars")
             print(f"   Revised length: {len(revised_report)} chars\n")
 
             return revised_report
 
         except Exception as e:
-            print(f"❌ Revision failed: {e}")
+            print(f"Revision failed: {e}")
             # Return original on error
             return current_report
 
@@ -339,7 +339,7 @@ Provide a brief reason for your choice."""
         """
         Assemble final report (English)
         """
-        print("📝 Assembling final report...\n")
+        print("Assembling final report...\n")
 
         # Get all components
         topic = state.get("user_input", "AI-Robotics Trend Analysis")
@@ -415,13 +415,13 @@ Provide a brief reason for your choice."""
         char_count = len(final_report)
         section_count = len([s for s in sections.keys()]) + (WriterConstants.TOTAL_SECTIONS - 4)
 
-        print(f"✅ Final Report Assembled!")
-        print(f"\n📊 Report Statistics:")
+        print(f"Final Report Assembled!")
+        print(f"\nReport Statistics:")
         print(f"   - Total Words: {word_count:,}")
         print(f"   - Total Characters: {char_count:,}")
         print(f"   - Sections: {section_count}")
         print(f"   - Citations: {len(state.get('citations', []))}")
-        print(f"\n📄 Report Structure:")
+        print(f"\nReport Structure:")
         print(f"   ✓ SUMMARY")
         print(f"   ✓ 1. Introduction")
         print(f"   ✓ 2. Technology Trend Analysis ({self._count_subsections(sections, 'section_2')} subsections)")
@@ -472,7 +472,7 @@ Provide a brief reason for your choice."""
                 return FeedbackSentiment.NEGATIVE.value
 
         except Exception as e:
-            print(f"⚠️  Sentiment evaluation error: {e}")
+            print(f"Sentiment evaluation error: {e}")
             return FeedbackSentiment.NEGATIVE.value
 
     def _generate_title(self, topic: str) -> str:

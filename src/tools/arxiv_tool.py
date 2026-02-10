@@ -135,7 +135,7 @@ class ArxivTool(BaseTool):
                 else:
                     max_results_int = min(int(max_results), 500)
                 
-                print(f"🔍 Searching arXiv: max_results={max_results_int}")
+                print(f"Searching arXiv: max_results={max_results_int}")
                 if attempt > 0:
                     print(f"   (Retry {attempt}/{self.config.retry_count})")
                 
@@ -154,7 +154,7 @@ class ArxivTool(BaseTool):
                 start_time = time.time()
                 
                 print(f"   Starting paper collection...")
-                print(f"   📅 Date filter: {start_date} to {end_date}")
+                print(f"   Date filter: {start_date} to {end_date}")
                 
                 try:
                     for result in self.client.results(search):
@@ -162,13 +162,13 @@ class ArxivTool(BaseTool):
                         
                         # 안전 장치: max_results_int 개수만큼 수집하면 중단
                         if count >= max_results_int:
-                            print(f"   ✅ Reached {max_results_int} papers, stopping...")
+                            print(f"   Reached {max_results_int} papers, stopping...")
                             break
                         
                         # 진행 상황 표시 (50개마다)
                         if count % 50 == 0:
                             elapsed = time.time() - start_time
-                            print(f"   📄 Processed {count} papers, collected {len(papers)} (filtered out: {filtered_out}) - {elapsed:.1f}s")
+                            print(f"   Processed {count} papers, collected {len(papers)} (filtered out: {filtered_out}) - {elapsed:.1f}s")
                         
                         # 날짜 필터링
                         try:
@@ -195,23 +195,23 @@ class ArxivTool(BaseTool):
                             else:
                                 filtered_out += 1
                                 if filtered_out == 1 or filtered_out % 20 == 0:
-                                    print(f"   ⏭️  Filtered out {filtered_out} papers (outside date range)")
+                                    print(f"   Filtered out {filtered_out} papers (outside date range)")
                         except Exception as paper_error:
-                            print(f"   ⚠️  Skipping paper: {paper_error}")
+                            print(f"   Skipping paper: {paper_error}")
                             continue
                 
                 except Exception as fetch_error:
                     # 페칭 중 에러 발생 - 지금까지 수집한 papers는 유지
-                    print(f"   ⚠️  Fetch interrupted at {count} papers: {fetch_error}")
-                    print(f"   📦 Saving {len(papers)} papers collected so far...")
-                    print(f"   📊 Stats: processed={count}, collected={len(papers)}, filtered_out={filtered_out}")
+                    print(f"   Fetch interrupted at {count} papers: {fetch_error}")
+                    print(f"   Saving {len(papers)} papers collected so far...")
+                    print(f"   Stats: processed={count}, collected={len(papers)}, filtered_out={filtered_out}")
                 
                 # 수집한 papers 업데이트
                 if len(papers) > len(best_papers):
                     best_papers = papers
                 
                 elapsed_total = time.time() - start_time
-                print(f"   ✅ Collected {len(papers)} papers (from {count} processed, filtered out: {filtered_out}, {elapsed_total:.1f}s)")
+                print(f"   Collected {len(papers)} papers (from {count} processed, filtered out: {filtered_out}, {elapsed_total:.1f}s)")
                 
                 # papers가 있으면 성공으로 간주
                 if len(papers) > 0:
@@ -231,33 +231,33 @@ class ArxivTool(BaseTool):
                     # 기업 통계 출력
                     if company_stats:
                         top_companies = sorted(company_stats.items(), key=lambda x: x[1], reverse=True)[:5]
-                        print(f"   🏢 Top companies: {', '.join([f'{c}({n})' for c, n in top_companies])}")
+                        print(f"   Top companies: {', '.join([f'{c}({n})' for c, n in top_companies])}")
                     
-                    print(f"✅ ArXiv search successful: {len(papers)} papers")
+                    print(f"ArXiv search successful: {len(papers)} papers")
                     return result
                 
                 # papers가 0개면 재시도
                 raise ValueError(f"No papers collected (processed {count})")
             
             except Exception as e:
-                print(f"❌ ArXiv search failed (attempt {attempt + 1}/{self.config.retry_count}): {e}")
+                print(f"ArXiv search failed (attempt {attempt + 1}/{self.config.retry_count}): {e}")
                 
                 if attempt < self.config.retry_count - 1:
                     wait_time = 5 * (2 ** attempt)  # 5s, 10s, 20s...
-                    print(f"⏳ Waiting {wait_time}s before retry...")
+                    print(f"Waiting {wait_time}s before retry...")
                     time.sleep(wait_time)
                     continue
                 else:
                     # 최종 실패 - best_papers라도 반환
                     if len(best_papers) > 0:
-                        print(f"💡 Returning {len(best_papers)} papers from previous attempts")
+                        print(f"Returning {len(best_papers)} papers from previous attempts")
                         return {
                             "total_count": len(best_papers),
                             "papers": best_papers,
                             "warning": "Partial results from retry attempts"
                         }
                     else:
-                        print(f"💥 No papers collected after {self.config.retry_count} attempts")
+                        print(f"No papers collected after {self.config.retry_count} attempts")
                         return {
                             "total_count": 0,
                             "papers": [],
@@ -281,8 +281,8 @@ class ArxivTool(BaseTool):
         """
         # 키워드가 너무 많으면 경고
         if len(keywords) > 10:
-            print(f"   ⚠️  Warning: {len(keywords)} keywords provided (recommended: ≤10)")
-            print(f"   ⚠️  Complex queries may cause ArXiv API errors")
+            print(f"   Warning: {len(keywords)} keywords provided (recommended: ≤10)")
+            print(f"   Complex queries may cause ArXiv API errors")
        
         cleaned_keywords = [kw.replace("_", " ") for kw in keywords]
         
@@ -344,9 +344,9 @@ class ArxivTool(BaseTool):
         Returns:
             중복 제거된 논문 결과
         """
-        print(f"\n🔍 Starting parallel search for {len(keywords)} keywords")
-        print(f"   📅 Date range: Last {years_back} years")
-        print(f"   📊 Max per keyword: {max_results_per_keyword}")
+        print(f"\nStarting parallel search for {len(keywords)} keywords")
+        print(f"   Date range: Last {years_back} years")
+        print(f"   Max per keyword: {max_results_per_keyword}")
         
         # 날짜 범위 계산 (최근 N년)
         end_date = datetime.now()
@@ -361,7 +361,7 @@ class ArxivTool(BaseTool):
             # 각 키워드별로 검색 작업 제출
             futures = []
             for i, keyword in enumerate(keywords):
-                print(f"   🔸 Submitting search {i+1}/{len(keywords)}: '{keyword}'")
+                print(f"   Submitting search {i+1}/{len(keywords)}: '{keyword}'")
                 future = executor.submit(
                     self._search_single_keyword,
                     keyword=keyword,
@@ -384,7 +384,7 @@ class ArxivTool(BaseTool):
                                 seen_ids.add(paper_id)
                                 all_papers.append(paper)
                 except Exception as e:
-                    print(f"   ⚠️  Keyword search failed: {e}")
+                    print(f"   Keyword search failed: {e}")
         
         # 발행일 기준으로 정렬 (최신순)
         all_papers.sort(key=lambda p: p["published"], reverse=True)
@@ -392,14 +392,14 @@ class ArxivTool(BaseTool):
         # 기업 통계 생성
         company_stats = self._generate_company_stats(all_papers)
         
-        print(f"\n✅ Parallel search complete!")
-        print(f"   📚 Total unique papers: {len(all_papers)}")
-        print(f"   🔄 Duplicates removed: {sum(len(f.result().get('papers', [])) for f in futures if f.done()) - len(all_papers)}")
+        print(f"\nParallel search complete!")
+        print(f"   Total unique papers: {len(all_papers)}")
+        print(f"   Duplicates removed: {sum(len(f.result().get('papers', [])) for f in futures if f.done()) - len(all_papers)}")
         
         # 기업 통계 출력
         if company_stats:
             top_companies = sorted(company_stats.items(), key=lambda x: x[1], reverse=True)[:5]
-            print(f"   🏢 Top companies: {', '.join([f'{c}({n})' for c, n in top_companies])}")
+            print(f"   Top companies: {', '.join([f'{c}({n})' for c, n in top_companies])}")
         
         # Citations 생성
         citations = []
@@ -417,10 +417,10 @@ class ArxivTool(BaseTool):
                 )
                 citations.append(citation)
             except Exception as e:
-                print(f"   ⚠️  Citation 생성 실패: {str(e)[:100]}")
+                print(f"   Citation 생성 실패: {str(e)[:100]}")
                 continue
         
-        print(f"   📚 Citations created: {len(citations)}")
+        print(f"   Citations created: {len(citations)}")
         
         return {
             "total_count": len(all_papers),
@@ -455,7 +455,7 @@ class ArxivTool(BaseTool):
         Returns:
             검색 결과
         """
-        print(f"\n   [{keyword_index}/{total_keywords}] 🔍 Searching: '{keyword}'")
+        print(f"\n   [{keyword_index}/{total_keywords}] Searching: '{keyword}'")
         
         try:
             # 기존 _run 메서드 재사용 (단일 키워드)
@@ -467,12 +467,12 @@ class ArxivTool(BaseTool):
             )
             
             papers_count = len(result.get("papers", []))
-            print(f"   [{keyword_index}/{total_keywords}] ✅ Found {papers_count} papers for '{keyword}'")
+            print(f"   [{keyword_index}/{total_keywords}] Found {papers_count} papers for '{keyword}'")
             
             return result
         
         except Exception as e:
-            print(f"   [{keyword_index}/{total_keywords}] ❌ Failed for '{keyword}': {e}")
+            print(f"   [{keyword_index}/{total_keywords}] Failed for '{keyword}': {e}")
             return {"papers": [], "total_count": 0}
     
     def _extract_companies(self, text: str) -> List[str]:

@@ -109,7 +109,7 @@ class ContentAnalysisLLM(BaseAgent):
                 - state["citations"]: List[CitationEntry]
         """
         print(f"\n{'='*60}")
-        print(f"🔬 Content Analysis Agent 실행 중 (LCEL 방식)...")
+        print(f"Content Analysis Agent 실행 중 (LCEL 방식)...")
         print(f"{'='*60}\n")
         
         # State에서 데이터 가져오기
@@ -122,36 +122,36 @@ class ContentAnalysisLLM(BaseAgent):
         
         try:
             # Step 1: 데이터 요약 생성
-            print(f"📊 Step 1: 데이터 요약 생성 중...")
+            print(f"Step 1: 데이터 요약 생성 중...")
             data_summaries = self._create_data_summaries(
                 arxiv_data, trends_data, news_data, rag_results
             )
-            print(f"   ✅ 요약 생성 완료\n")
+            print(f"   요약 생성 완료\n")
             
             # Step 2 & 3: Section 2, 3 병렬 실행
-            print(f"🔀 Step 2 & 3: Section 2, 3 병렬 생성 중...")
+            print(f"Step 2 & 3: Section 2, 3 병렬 생성 중...")
             section_2_result, section_3_result = await self._run_parallel_sections(
                 topic, keywords, data_summaries
             )
-            print(f"   ✅ Section 2 완료 (trends: {len(section_2_result.get('trends', []))}개)")
-            print(f"   ✅ Section 3 완료 (sections: {len(section_2_result.get('sections', {}))}개)\n")
+            print(f"   Section 2 완료 (trends: {len(section_2_result.get('trends', []))}개)")
+            print(f"   Section 3 완료 (sections: {len(section_2_result.get('sections', {}))}개)\n")
             
             # Step 4: Section 4 순차 실행
-            print(f"➡️  Step 4: Section 4 생성 중 (Section 2, 3 기반)...")
+            print(f"Step 4: Section 4 생성 중 (Section 2, 3 기반)...")
             section_4_result = await self._run_section_4(
                 topic, section_2_result, section_3_result, data_summaries
             )
-            print(f"   ✅ Section 4 완료\n")
+            print(f"   Section 4 완료\n")
             
             # Step 5: Section 5 순차 실행
-            print(f"➡️  Step 5: Section 5 생성 중 (Section 2, 3, 4 기반)...")
+            print(f"Step 5: Section 5 생성 중 (Section 2, 3, 4 기반)...")
             section_5_result = await self._run_section_5(
                 topic, section_2_result, section_3_result, section_4_result
             )
-            print(f"   ✅ Section 5 완료\n")
+            print(f"   Section 5 완료\n")
             
             # Step 6: 결과 통합 및 검증
-            print(f"🔍 Step 6: 결과 통합 및 검증 중...")
+            print(f"Step 6: 결과 통합 및 검증 중...")
             trends, sections, citations = self._integrate_results(
                 section_2_result, section_3_result, section_4_result, section_5_result
             )
@@ -164,16 +164,16 @@ class ContentAnalysisLLM(BaseAgent):
             hot_trends = [t for t in trends if t.is_hot_trend()]
             rising_stars = [t for t in trends if t.is_rising_star()]
             
-            print(f"   📈 HOT_TRENDS (1-2년 상용화): {len(hot_trends)}개")
+            print(f"   HOT_TRENDS (1-2년 상용화): {len(hot_trends)}개")
             for trend in hot_trends[:3]:
                 print(f"      - {trend.name} (논문: {trend.paper_count}, 기업 비율: {trend.company_ratio:.2f})")
             
-            print(f"\n   🌟 RISING_STARS (3-5년 핵심 기술): {len(rising_stars)}개")
+            print(f"\n   RISING_STARS (3-5년 핵심 기술): {len(rising_stars)}개")
             for trend in rising_stars[:3]:
                 print(f"      - {trend.name} (논문: {trend.paper_count}, 기업 비율: {trend.company_ratio:.2f})")
             
             # Citation 출력
-            print(f"\n   📚 Citations (출처):")
+            print(f"\n   Citations (출처):")
             arxiv_citations = [c for c in citations if c.source_type == "arxiv"]
             news_citations = [c for c in citations if c.source_type == "news"]
             report_citations = [c for c in citations if c.source_type == "report"]
@@ -191,7 +191,7 @@ class ContentAnalysisLLM(BaseAgent):
                 print(f"        [{c.number}] {c.title[:60]}...")
             
             print(f"\n{'='*60}")
-            print(f"✅ Content Analysis 완료!")
+            print(f"Content Analysis 완료!")
             print(f"{'='*60}\n")
             
             # State 업데이트
@@ -203,8 +203,8 @@ class ContentAnalysisLLM(BaseAgent):
             return state
         
         except Exception as e:
-            print(f"❌ Analysis 실패: {e}")
-            print(f"\n💥 Content Analysis Agent 최종 실패\n")
+            print(f"Analysis 실패: {e}")
+            print(f"\nContent Analysis Agent 최종 실패\n")
             state["status"] = WorkflowStatus.ANALYSIS_FAILED.value
             state["error"] = str(e)
             raise
@@ -274,7 +274,7 @@ class ContentAnalysisLLM(BaseAgent):
         
         # 인용 시작 번호 계산
         citation_start = max([
-            c.get("number", 0)
+            int(c.get("number", 0)) if isinstance(c.get("number"), (int, str)) else 0
             for c in section_2_result.get("citations", []) + section_3_result.get("citations", [])
         ], default=0) + 1
         
@@ -322,7 +322,7 @@ class ContentAnalysisLLM(BaseAgent):
         
         # 인용 시작 번호 계산
         citation_start = max([
-            c.get("number", 0)
+            int(c.get("number", 0)) if isinstance(c.get("number"), (int, str)) else 0
             for c in (
                 section_2_result.get("citations", []) +
                 section_3_result.get("citations", []) +
@@ -368,6 +368,10 @@ class ContentAnalysisLLM(BaseAgent):
         sections.update(section_3_result.get("sections", {}))
         sections.update(section_4_result.get("sections", {}))
         sections.update(section_5_result.get("sections", {}))
+        
+        # Remove markdown wrapper from sections
+        for key, value in sections.items():
+            sections[key] = self._remove_markdown_wrapper(value)
         
         # 필수 섹션 확인
         required_sections = [
@@ -417,6 +421,23 @@ class ContentAnalysisLLM(BaseAgent):
         unique_citations.sort(key=lambda c: c.number)
         
         return trends, sections, unique_citations
+    
+    def _remove_markdown_wrapper(self, text: str) -> str:
+        """Remove markdown code block wrapper from LLM response"""
+        if not isinstance(text, str):
+            return text
+        
+        text = text.strip()
+        
+        if text.startswith("```markdown"):
+            text = text[len("```markdown"):].strip()
+        elif text.startswith("```"):
+            text = text[3:].strip()
+        
+        if text.endswith("```"):
+            text = text[:-3].strip()
+        
+        return text
     
     def _create_data_summaries(
         self,

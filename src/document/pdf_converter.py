@@ -52,22 +52,22 @@ class PdfConverter:
             try:
                 from docx2pdf import convert as docx2pdf_convert
                 
-                print(f"📄 Converting to PDF using docx2pdf...")
+                print(f"Converting to PDF using docx2pdf...")
                 docx2pdf_convert(str(docx_path), str(pdf_path))
                 
-                print(f"✅ PDF generated: {pdf_path}")
+                print(f"PDF generated: {pdf_path}")
                 return str(pdf_path)
             
             except ImportError:
-                print(f"⚠️  docx2pdf not available, trying alternative method...")
+                print(f"docx2pdf not available, trying alternative method...")
             
             except Exception as e:
-                print(f"⚠️  docx2pdf conversion failed: {e}")
+                print(f"docx2pdf conversion failed: {e}")
                 print(f"   Trying alternative method...")
             
             # Method 2: Try libreoffice (Linux/cross-platform)
             try:
-                print(f"📄 Converting to PDF using LibreOffice...")
+                print(f"Converting to PDF using LibreOffice...")
                 
                 result = subprocess.run(
                     [
@@ -83,26 +83,26 @@ class PdfConverter:
                 )
                 
                 if result.returncode == 0:
-                    print(f"✅ PDF generated: {pdf_path}")
+                    print(f"PDF generated: {pdf_path}")
                     return str(pdf_path)
                 else:
-                    print(f"❌ LibreOffice conversion failed: {result.stderr}")
+                    print(f"LibreOffice conversion failed: {result.stderr}")
             
             except FileNotFoundError:
-                print(f"⚠️  LibreOffice not found in PATH")
+                print(f"LibreOffice not found in PATH")
             
             except Exception as e:
-                print(f"⚠️  LibreOffice conversion failed: {e}")
+                print(f"LibreOffice conversion failed: {e}")
             
             # Method 3: Fallback - just copy DOCX as "PDF" (not ideal but won't crash)
-            print(f"⚠️  All PDF conversion methods failed")
+            print(f"All PDF conversion methods failed")
             print(f"   Saving DOCX as fallback (install 'docx2pdf' or 'libreoffice' for PDF conversion)")
             
             # Just keep the DOCX
             return str(docx_path)
         
         except Exception as e:
-            print(f"❌ PDF conversion failed: {e}")
+            print(f"PDF conversion failed: {e}")
             print(f"   Returning DOCX path as fallback")
             return str(docx_path)
 
