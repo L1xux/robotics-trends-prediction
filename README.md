@@ -2,7 +2,7 @@
 
 로보틱스 트렌드 분석 보고서를 자동 생성하는 AI 프로그램입니다.
 
-## 기술 스택
+## 기술
 
 ### 핵심 프레임워크
 - **Python 3.11+**
@@ -20,16 +20,14 @@
 - **Pydantic** - 스키마 검증 및 타입 안정성
 - **python-docx / docx2pdf** - 문서 생성
 
-## 아키텍처
-
-### 워크플로우
+## 워크플로우
 
 ```
 사용자 입력
     ↓
 ┌───────────────┐
 │ Planning      │  연구 계획 생성 및 사용자 승인
-│ Agent         │
+│ Agent         │  (Human in the Loop) 
 └───────────────┘
     ↓
 ┌───────────────┐
@@ -42,7 +40,7 @@ Content Analysis   │  트렌드 분석 및 섹션 생성
 Report Synthesis   │  요약 및 결론 작성
     ↓              │
 ┌───────────────┐  │
-│ Writer        │ ─┘  보고서 조립 및 사용자 리뷰 (ReAct)
+│ Writer        │ ─┘  보고서 조립 및 사용자 리뷰 (Human in the Loop, ReAct)
 │ Agent         │     - Revision: 보고서 수정
 └───────────────┘     - Recollection: 데이터 재수집
     ↓
@@ -105,12 +103,11 @@ robotics-trends-prediction/
 │   │   │   └── agent_config.py              # 에이전트 설정
 │   │   ├── planning_agent.py                # 연구 계획 생성 (HITL)
 │   │   ├── data_collection_agent.py         # 데이터 수집 (ReAct)
-│   │   ├── writer_agent.py                  # 보고서 작성 및 리뷰 (ReAct)
-│   │   └── evaluation_agent.py              # Ragas 품질 평가
-│   ├── llms/                                # LLM 기반 모듈 (도구 없음)
+│   │   └── writer_agent.py                  # 보고서 작성 및 리뷰 (ReAct)
+│   ├── llms/                                # LLM 기반 모듈
 │   │   ├── content_analysis_llm.py          # 트렌드 분석 및 섹션 생성
 │   │   ├── report_synthesis_llm.py          # 요약 및 결론 작성
-│   │   └── revision_llm.py                  # (사용 안 함)
+│   │   └── evaluation_llm.py                # Ragas 품질 평가
 │   ├── tools/                               # LangChain 도구
 │   │   ├── base/
 │   │   │   ├── base_tool.py                 # 도구 베이스 클래스
@@ -262,6 +259,11 @@ python scripts/run_pipeline.py --topic "제조업의 휴머노이드 로봇"
    - 승인: "ok", "approve", "좋아요"
    - 수정: "결론 부분을 더 구체적으로 작성해줘"
    - 데이터 재수집: "자율주행 로봇에 대한 데이터를 더 수집해줘"
+
+
+
+
+
 
 
 
